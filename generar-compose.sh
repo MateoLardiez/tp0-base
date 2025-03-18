@@ -28,7 +28,6 @@ python3 generar_clientes.py $NUM_CLIENTS >> $OUTPUT_FILE
 
 # 3) Agrego la red
 cat >> $OUTPUT_FILE <<EOL
-
 networks:
   testing_net:
     ipam:
