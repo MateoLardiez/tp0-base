@@ -216,3 +216,10 @@ Tambien para que pasen todas las pruebas se debe eliminar la configuaricon de en
 
 Se puede observar que pasa todas las pruebas:
 ![alt text](ImgPruebas/pruebasEj2.png)
+
+## Resolucion ejercicio 3
+
+Se busca verificar que al enviar un mensaje al servidor, el mensaje que devuelva sea el mismo y asi comprobar el echo. Para esto se crea un nuevo archivo validar-echo-server.sh el cual primero ejecuta docker-compose-levantar-servidor.yaml el cual levanta el contenedor servidor y la red. Luego se crea un contenedor temporal busybox para enviar el mensaje al servidor y luego eliminarlo. Si el mensaje que devuelve el servidor es el mismo que el que se envio, el result es success. Caso contrario el result es fail
+
+El nuevoscript de bash se ejecuta de la forma ./validar-echo-server.sh , sin pasarle ningun parametro
+
