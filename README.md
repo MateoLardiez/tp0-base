@@ -200,3 +200,14 @@ Para el manejo de errores se analiza que los parametros recibidos sean 2 y que e
 
 Se puede observar que pasa todas las pruebas:
 ![alt text](ImgPruebas/pruebasEj1.png)
+
+## Resolucion ejercicio 2
+
+Se busca separar la configuracion del codigo para que no se tengan que reconstruir las imagenes de Docker cada vez que hay una modificacion en config.ini y config.yaml. Para esto se agrega en cada en el docker-compose-dev.yaml en el servidor el volumen que diriga al config.ini:
+
+- volumes:
+    - ./server/config.ini:/config.ini
+
+Y lo mismo para el cliente, se agrega su volumen a cada cliente:
+- volumes:
+    - ./client/config.yaml:/config.yaml
