@@ -14,10 +14,10 @@ def generar_clientes(n):
       - CLI_LOG_LEVEL=DEBUG
     networks:
       - testing_net
-    depends_on:
-      - server
     volumes:
       - ./client/config.yaml:/config.yaml
+    depends_on:
+      - server
     """
 
     return clientes
