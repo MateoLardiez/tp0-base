@@ -10,6 +10,13 @@ services:
       - testing_net
     volumes:
       - ./server/config.ini:/config.ini
+    profiles:
+      - unhealthy
+    healthcheck:
+      test: exit 1
+      interval: 5s
+      retries: 1
+      start_period: 5s
 
   client1:
     container_name: client1
@@ -23,6 +30,9 @@ services:
       - ./client/config.yaml:/config.yaml
     depends_on:
       - server
+
+  healthcheck:
+
     
 networks:
   testing_net:
