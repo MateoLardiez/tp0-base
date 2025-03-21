@@ -20,16 +20,15 @@ def generar_clientes(n):
 
     return clientes
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise Exception("ERROR: Se deben recibir exactamente 2 parametros")
-        
-    try:  
-      num_clientes = int(sys.argv[1])
-    except:
-      raise Exception("No se esta pasando un entero como parametro")
+if len(sys.argv) != 2:
+  raise Exception("ERROR: Se deben recibir exactamente 2 parametros")
     
-    if num_clientes < 0:
-      raise Exception("La cantidad de clientes debe ser un numero positivo")    
-    
-    print(generar_clientes(num_clientes))
+try:  
+  num_clientes = int(sys.argv[1])
+except:
+  raise Exception("No se esta pasando un entero como parametro")
+
+if num_clientes < 0:
+  raise Exception("La cantidad de clientes debe ser un numero positivo")    
+
+print(generar_clientes(num_clientes))
