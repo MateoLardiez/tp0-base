@@ -31,9 +31,6 @@ services:
     depends_on:
       - server
 
-  healthcheck:
-
-    
 networks:
   testing_net:
     ipam:
