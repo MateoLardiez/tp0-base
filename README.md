@@ -194,4 +194,9 @@ Definimos la escritura al yaml del servidor.
 Luego utilizamos la funcion generar_clientes.py para que agregue al yaml la parte de los clientes
 Finalmente agregamos la parte de red.
 
-Nos queda un docker-compose.yaml ejecutable
+Nos queda un docker-compose.yaml ejecutable.
+
+Para el manejo de errores se analiza que los parametros recibidos sean 2 y que el segundo parametro sea si o si un numero entero positivo.
+
+Se puede observar que pasa todas las pruebas:
+![alt text](ImgPruebas/pruebasEj1.png)
