@@ -1,8 +1,8 @@
 #!/bin/bash
 
-docker compose -f docker-compose-levantar-servidor.yaml up -d --build # Levanto red y servidor
+# docker compose -f docker-compose-levantar-servidor.yaml up -d --build # Levanto red y servidor
 
-sleep 1
+# sleep 1
 
 msg="Mensaje de prueba"
 
