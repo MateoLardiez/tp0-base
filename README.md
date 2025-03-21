@@ -213,3 +213,6 @@ Y lo mismo para el cliente, se agrega su volumen a cada cliente:
     - ./client/config.yaml:/config.yaml
 
 Tambien para que pasen todas las pruebas se debe eliminar la configuaricon de entorno de logs: CLI_LOG_LEVEL=DEBUG para el cliente y el servidor, ya que en los tests se utiliza tanto INFO con DEBUG.
+
+Se puede observar que pasa todas las pruebas:
+![alt text](ImgPruebas/pruebasEj2.png)
