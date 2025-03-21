@@ -21,6 +21,8 @@ services:
       - LOGGING_LEVEL=DEBUG
     networks:
       - testing_net
+    volumes:
+      - ./server/config.ini:/config.ini
 EOL
 
 # 2) Agrego al yaml la definicion de los n clientes, que se genera en generar_clientes.py

@@ -16,6 +16,8 @@ def generar_clientes(n):
       - testing_net
     depends_on:
       - server
+    volumes:
+      - ./client/config.yaml:/config.yaml
     """
 
     return clientes
