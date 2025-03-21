@@ -31,6 +31,17 @@ services:
     depends_on:
       - server
 
+  healthcheck:
+    container_name: healthcheck
+    image: ubuntu:latest
+    entrypoint: ["/bin/sh", "./validar-echo-server.sh"]
+    networks:
+      - testing_net
+    depends_on:
+      - server
+    volumes:
+      - ./validar-echo-server.sh:/validar-echo-server.sh
+
 networks:
   testing_net:
     ipam:
