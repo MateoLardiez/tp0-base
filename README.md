@@ -211,3 +211,5 @@ Se busca separar la configuracion del codigo para que no se tengan que reconstru
 Y lo mismo para el cliente, se agrega su volumen a cada cliente:
 - volumes:
     - ./client/config.yaml:/config.yaml
+
+Tambien para que pasen todas las pruebas se debe eliminar la configuaricon de entorno de logs: CLI_LOG_LEVEL=DEBUG para el cliente y el servidor, ya que en los tests se utiliza tanto INFO con DEBUG.
