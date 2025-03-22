@@ -6,10 +6,6 @@
 
 MSG="Mensaje de prueba"
 
-until docker run --rm --network=tp0_testing_net -i busybox nc -z server 12345; do
-    sleep 1
-done
-
 #RESPONSE=$(echo "$MSG" | docker run --rm --network=tp0_testing_net -i busybox nc -w 5 server 12345)
 RESPONSE=$(docker run --rm --network=tp0_testing_net -i busybox sh -c "echo '$MSG' | nc -w 5 server 12345")
 
