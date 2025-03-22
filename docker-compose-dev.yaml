@@ -10,8 +10,6 @@ services:
       - testing_net
     volumes:
       - ./server/config.ini:/config.ini
-    profiles:
-      - unhealthy
 
   client1:
     container_name: client1
@@ -25,7 +23,7 @@ services:
       - ./client/config.yaml:/config.yaml
     depends_on:
       - server
-
+    
 networks:
   testing_net:
     ipam:
