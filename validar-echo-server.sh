@@ -6,7 +6,7 @@
 
 msg="Mensaje de prueba"
 
-respuesta=$(echo "$msg" | nc server 12345)
+respuesta=$(echo "$msg" | docker run --rm --network=tp0_testing_net busybox nc -w 2 server 12345)
 
 if [ "$respuesta" == "$mensaje" ]; then
   echo "action: test_echo_server | result: success"

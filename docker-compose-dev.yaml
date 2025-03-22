@@ -12,11 +12,6 @@ services:
       - ./server/config.ini:/config.ini
     profiles:
       - unhealthy
-    healthcheck:
-      test: exit 1
-      interval: 5s
-      retries: 1
-      start_period: 5s
 
   client1:
     container_name: client1
@@ -30,17 +25,6 @@ services:
       - ./client/config.yaml:/config.yaml
     depends_on:
       - server
-
-  healthcheck:
-    container_name: healthcheck
-    image: ubuntu:latest
-    entrypoint: ["/bin/sh", "./validar-echo-server.sh"]
-    networks:
-      - testing_net
-    depends_on:
-      - server
-    volumes:
-      - ./validar-echo-server.sh:/validar-echo-server.sh
 
 networks:
   testing_net:
