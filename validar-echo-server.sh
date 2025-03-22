@@ -4,11 +4,11 @@
 
 # sleep 1
 
-msg="Mensaje de prueba"
+MSG="Mensaje de prueba"
 
-respuesta=$(echo "$msg" | docker run --rm --platform linux/amd64 --network=tp0_testing_net -i subfuzion/netcat -w 5 server 12345)
+RESPONSE=$(echo "$MSG" | docker run --rm --platform linux/amd64 --network=tp0_testing_net -i subfuzion/netcat -w 5 server 12345)
 
-if [ "$respuesta" == "$mensaje" ]; then
+if [ "$RESPONSE" == "$MSG" ]; then
   echo "action: test_echo_server | result: success"
 else
   echo "action: test_echo_server | result: fail"
