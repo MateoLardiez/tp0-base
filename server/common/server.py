@@ -54,7 +54,7 @@ class Server:
             msg = client_sock.recv(1024).rstrip().decode('utf-8')
             addr = client_sock.getpeername()
             logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            self.clients_connected.append(addr)
+            self.clients_connected.append(client_sock)
             # TODO: Modify the send to avoid short-writes
             client_sock.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:
