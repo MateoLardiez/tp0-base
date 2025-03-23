@@ -1,6 +1,7 @@
 import socket
 import logging
-
+import signal
+import sys
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -8,6 +9,21 @@ class Server:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
         self._server_socket.listen(listen_backlog)
+
+        self.running = True
+        signal.signal(signal.SIGTERM, self.shutdown)
+        self.clients_connected = []
+
+    def shutdown(self, signum, frame):
+        """Maneja SIGTERM cerrando el socket correctamente"""
+        logging.warning("action: shutdown | result: in_progress")
+        self.running = False
+        for client in self.clients_connected:
+            logging.warning(f'clossing gracefully connection with client address: {client}')
+            client.close()
+        self._server_socket.close()
+        logging.warning("action: shutdown | result: success")
+        sys.exit(0)
 
     def run(self):
         """
@@ -20,9 +36,12 @@ class Server:
 
         # TODO: Modify this program to handle signal to graceful shutdown
         # the server
-        while True:
-            client_sock = self.__accept_new_connection()
-            self.__handle_client_connection(client_sock)
+        while self.running:
+            try:
+                client_sock = self.__accept_new_connection()
+                self.__handle_client_connection(client_sock)
+            except OSError:
+                break
 
     def __handle_client_connection(self, client_sock):
         """
@@ -36,6 +55,7 @@ class Server:
             msg = client_sock.recv(1024).rstrip().decode('utf-8')
             addr = client_sock.getpeername()
             logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
+            self.clients_connected.append(addr)
             # TODO: Modify the send to avoid short-writes
             client_sock.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:

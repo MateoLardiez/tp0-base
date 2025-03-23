@@ -223,3 +223,11 @@ Se busca verificar que al enviar un mensaje al servidor, el mensaje que devuelva
 
 El nuevoscript de bash se ejecuta de la forma ./validar-echo-server.sh , sin pasarle ningun parametro
 
+## Resolucion ejercicio 4
+
+Se debe modificar servidor y cliente para que terminen de forma gracefull cuando reciban la senial SIGTERM. Para esto se modifican ambos archivos client.go y server.py.
+Vamos por el cliente primero:
+Se agrega como variable del Cliente un canal para detectar las seniales. Tambien se crea un hilo de ejecucion (goroutine) para que este siempre atento a escuchar y manejar la senial. Esto se hace en la funcion creada handleShutDown(). Esta funcion se bloquea hasta que se reciba la senial y luego mata gracefully al cliente. 
+
+Del lado del cliente se hace algo similar:
+Se agrega una variable que pueda detectar la senial y un booleano para parar de escuchar por el puerto conectado, cuando se desconecte. Se almacenan los clientes conectados en una lista. Cuando se recibe la senial, se los desconecta uno por uno y luego se mata el servidor gracefully

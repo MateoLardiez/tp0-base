@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/op/go-logging"
@@ -23,6 +26,7 @@ type ClientConfig struct {
 type Client struct {
 	config ClientConfig
 	conn   net.Conn
+	stop   chan os.Signal // Canal para capturar señales del sistema
 }
 
 // NewClient Initializes a new client receiving the configuration
@@ -30,8 +34,24 @@ type Client struct {
 func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config: config,
+		stop:   make(chan os.Signal, 1),
 	}
+	signal.Notify(client.stop, syscall.SIGTERM) // Capturar señales
+
+	go client.handleShutdown() // Goroutine para escuchar y manejar la senial SIGTERM todo el tiempo
+
 	return client
+}
+
+// handleShutdown maneja SIGTERM y cierra la conexión correctamente
+func (c *Client) handleShutdown() {
+	<-c.stop // Bloquea hasta que reciba SIGTERM o SIGINT
+	log.Warningf("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
+	if c.conn != nil {
+		c.conn.Close()
+	}
+	log.Warningf("action: shutdown | result: success | client_id: %v", c.config.ID)
+	os.Exit(0)
 }
 
 // CreateClientSocket Initializes client socket. In case of
