@@ -230,4 +230,7 @@ Vamos por el cliente primero:
 Se agrega como variable del Cliente un canal para detectar las seniales. Tambien se crea un hilo de ejecucion (goroutine) para que este siempre atento a escuchar y manejar la senial. Esto se hace en la funcion creada handleShutDown(). Esta funcion se bloquea hasta que se reciba la senial y luego mata gracefully al cliente. 
 
 Del lado del cliente se hace algo similar:
-Se agrega una variable que pueda detectar la senial y un booleano para parar de escuchar por el puerto conectado, cuando se desconecte. Se almacenan los clientes conectados en una lista. Cuando se recibe la senial, se los desconecta uno por uno y luego se mata el servidor gracefully
+Se agrega una variable que pueda detectar la senial y un booleano para parar de escuchar por el puerto conectado, cuando se desconecte. Se almacenan los clientes conectados en una lista. Cuando se recibe la senial, se los desconecta uno por uno y luego se mata el servidor gracefully.
+
+Todas las pruebas de la catedra pasan exitosamente:
+![alt text](ImgPruebas/pruebasEj4.png)
