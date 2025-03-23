@@ -16,7 +16,6 @@ class Server:
 
     def shutdown(self, signum, frame):
         """Maneja SIGTERM cerrando el socket correctamente"""
-        logging.warning("action: shutdown | result: in_progress")
         self.running = False
         for client in self.clients_connected:
             logging.warning(f'clossing gracefully connection with client address: {client}')
