@@ -18,7 +18,8 @@ class Server:
         """Maneja SIGTERM cerrando el socket correctamente"""
         self.running = False
         for client in self.clients_connected:
-            logging.warning(f'clossing gracefully connection with client address: {client}')
+            addr = client.getpeername()
+            logging.warning(f'clossing gracefully connection with client address: {addr[0]}')
             client.close()
         self._server_socket.close()
         logging.warning("action: shutdown | result: success")
@@ -53,8 +54,8 @@ class Server:
             # TODO: Modify the receive to avoid short-reads
             msg = client_sock.recv(1024).rstrip().decode('utf-8')
             addr = client_sock.getpeername()
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
             self.clients_connected.append(client_sock)
+            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
             # TODO: Modify the send to avoid short-writes
             client_sock.send("{}\n".format(msg).encode('utf-8'))
         except OSError as e:
