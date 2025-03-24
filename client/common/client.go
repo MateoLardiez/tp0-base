@@ -90,6 +90,18 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+func sendAll(conn net.Conn, data []byte) error {
+	totalSent := 0
+	for totalSent < len(data) {
+		n, err := conn.Write(data[totalSent:])
+		if err != nil {
+			return err
+		}
+		totalSent += n
+	}
+	return nil
+}
+
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
@@ -115,7 +127,7 @@ func (c *Client) StartClientLoop() {
 		return
 	}
 	// Enviar la apuesta al servidor
-	_, err_send := c.conn.Write(data)
+	err_send := sendAll(c.conn, data)
 	if err_send != nil {
 		log.Errorf("action: send_bet | result: fail | client_id: %v | error: %v",
 			c.config.ID,

@@ -3,6 +3,16 @@ import logging
 from utils import Bet
 
 
+def recv_all(sock, size):
+    """ Intenta recibir exactamente 'size' bytes del socket. """
+    data = bytearray()
+    while len(data) < size:
+        chunk = sock.recv(size - len(data))
+        if not chunk:  # Si no recibe mas datos, hay un error en la conexion
+            return None
+        data.extend(chunk)
+    return data
+
 def receive_bet(client_sock):
     """
     Recibe y parsea una apuesta desde un socket de cliente.
@@ -17,7 +27,7 @@ def receive_bet(client_sock):
         # Recibir los primeros 6 enteros (cada uno de 4 bytes)
         header_format = "!6I"  # 6 enteros sin signo en formato big-endian
         header_size = struct.calcsize(header_format)
-        header_data = client_sock.recv(header_size)
+        header_data = recv_all(client_sock, header_size)
 
         if not header_data or len(header_data) != header_size:
             logging.error("Error al recibir las longitudes de los campos")
@@ -27,14 +37,8 @@ def receive_bet(client_sock):
 
         # Recibir los datos de acuerdo a las longitudes informadas
         total_data_length = agency_len + name_len + surname_len + dni_len + birthdate_len + number_len
-        received_data = bytearray()
 
-        while len(received_data) < total_data_length:
-            chunk = client_sock.recv(total_data_length - len(received_data))
-            if not chunk:
-                logging.error("Conexión interrumpida antes de recibir todos los datos")
-                return None
-            received_data.extend(chunk)
+        received_data = recv_all(client_sock, total_data_length)
 
         # Extraer los valores según los tamaños informados
         agency_number = received_data[:agency_len].decode('utf-8')
