@@ -80,9 +80,10 @@ class Server:
 
                 # Guardamos todas las apuestas en el archivo CSV
                 store_bets(bets)
-                
+                logging.info(f'action: apuestas_recibida | result: success | cantidad: {total_bets}')                
 
 
+            
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {total_bets}')
             client_sock.sendall("OK\n".encode('utf-8'))
 

@@ -203,20 +203,19 @@ func (c *Client) SendBetsInBatch() {
 			continue
 		}
 
-		// Recibir confirmación del servidor
-		response, err := bufio.NewReader(c.conn).ReadString('\n')
-		if err != nil {
-			log.Errorf("action: receive_confirmation | result: fail | client_id: %v | error: %v", c.config.ID, err)
-			continue
-		}
-		response = strings.TrimSpace(response)
+	}
+	// Recibir confirmación del servidor
+	response, err := bufio.NewReader(c.conn).ReadString('\n')
+	if err != nil {
+		log.Errorf("action: receive_confirmation | result: fail | client_id: %v | error: %v", c.config.ID, err)
+	}
+	response = strings.TrimSpace(response)
 
-		// Loguear respuesta
-		if response == "OK" {
-			log.Infof("action: batch_enviado | result: success | cantidad: %d", len(batch))
-		} else {
-			log.Warningf("action: batch_enviado | result: fail | cantidad: %d | response: %v", len(batch), response)
-		}
+	// Loguear respuesta
+	if response == "OK" {
+		log.Infof("action: batch_enviado | result: success |")
+	} else {
+		log.Warningf("action: batch_enviado | result: fail | cantidad: NADA | response: %v", response)
 	}
 
 	log.Infof("action: envio_batches_completo | result: success | client_id: %v", c.config.ID)
@@ -230,4 +229,5 @@ func (c *Client) StartClientLoop() {
 	c.SendBetsInBatch()
 
 	log.Infof("action: bets_sent | result: success | client_id: %v", c.config.ID)
+
 }
