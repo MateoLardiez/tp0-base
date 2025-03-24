@@ -54,19 +54,20 @@ class Server:
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
+        total_bets = 0
         try:
-            total_bets = 0
             amount_batchs = receive_integer(client_sock)
             if amount_batchs is None:
                 client_sock.sendall("ERROR\n".encode('utf-8'))
+                logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
                 return
-            logging.info(f'action: amount_batchs | result: success | cantidad: {amount_batchs}')
             
 
             for _ in range(amount_batchs):
                 batch_size = receive_integer(client_sock)
                 if batch_size is None:
                     client_sock.sendall("ERROR\n".encode('utf-8'))
+                    logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
                     return
 
                 bets = []
@@ -74,20 +75,21 @@ class Server:
                     bet = receive_bet(client_sock)
                     if bet is None:
                         client_sock.sendall("ERROR\n".encode('utf-8'))
+                        logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')                        
                         return  # Si alguna apuesta falla, cancelamos todo
                     total_bets+=1
                     bets.append(bet)
 
                 # Guardamos todas las apuestas en el archivo CSV
                 store_bets(bets)
-                logging.info(f'action: apuestas_recibida | result: success | cantidad: {total_bets}')                
 
 
-            
+
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {total_bets}')
             client_sock.sendall("OK\n".encode('utf-8'))
 
         except OSError as e:
+            logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:
             client_sock.close()
