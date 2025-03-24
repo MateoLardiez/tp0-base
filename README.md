@@ -269,3 +269,8 @@ Ahora el cliente debe poder enviar muchas apuestas a la vez. Las apuestas las le
 Para esto se adapta al cliente para que pueda leer todas las apuestas de su csv correspondiente. Se modifica el docker-compose agregando a cada cliente el archivo correspondiente a las bets que debe hacer. Luego se genera una funcion para leer el csv. Esto lo hace la funcion ReadBetsFromCSV() la cual a partir de un filename, lee y arma todas las Bets de ese csv.
 
 Se modifica levemente el protocolo para que se puedan enviar todas las bets correctamente. Primero se envia un entero que define la cantidad de batches que se van a enviar. Luego se comienza a enviar batch por batch. Cada batch envia al principio la cantidad de bets que va a enviar y luego empieza a enviar los bets con el protocolo ya definido.
+El servidor cuando recibe la cantidad de batches que le van a llegar, itera esa cantidad de batches. En cada iteracion lee la cantidad de bets que le van a llegar e itera esa cantidad de veces. Termina cuando recorrio los for anidados.
+Tambien, del lado del cliente, se analiza que los batches no superen los 8kb.
+
+Las pruebas de la catedra pasan correctamente:
+![alt text](ImgPruebas/pruebasEj6.png)
