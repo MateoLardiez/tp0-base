@@ -213,12 +213,10 @@ func (c *Client) SendBetsInBatch() {
 
 	// Loguear respuesta
 	if response == "OK" {
-		log.Infof("action: batch_enviado | result: success |")
+		log.Infof("action: apuesta_enviada | result: success | cantidad: %v | client_id: %v", len(bets), c.config.ID)
 	} else {
-		log.Warningf("action: batch_enviado | result: fail | cantidad: NADA | response: %v", response)
+		log.Warningf("action: apuesta_enviada | result: fail | client_id: %v | response: %v", c.config.ID, response)
 	}
-
-	log.Infof("action: envio_batches_completo | result: success | client_id: %v", c.config.ID)
 }
 
 // StartClientLoop Send messages to the client until some time threshold is met
