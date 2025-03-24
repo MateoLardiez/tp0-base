@@ -99,8 +99,8 @@ func SplitBetsIntoBatches(bets []Bet, batchSize int) [][]Bet {
 
 		betSize := len(serializedBet)
 
-		// Si agregar esta apuesta supera los 8191 bytes(1 byte para cant_bytes), cerramos el batch actual y empezamos uno nuevo
-		if currentSize+betSize > 8191 || len(currentBatch) >= batchSize {
+		// Si agregar esta apuesta supera los 8188 bytes(4 bytes para cant_bets), cerramos el batch actual y empezamos uno nuevo
+		if currentSize+betSize > 8188 || len(currentBatch) >= batchSize {
 			batches = append(batches, currentBatch)
 			currentBatch = []Bet{}
 			currentSize = 0

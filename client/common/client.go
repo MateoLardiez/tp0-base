@@ -2,6 +2,7 @@ package common
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
@@ -176,7 +177,17 @@ func (c *Client) SendBetsInBatch() {
 		log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		return
 	}
-	defer c.conn.Close() //Para cerrar el socket automaticamente al finalizar la función
+	defer c.conn.Close() // Para cerrar el socket automáticamente al finalizar la función
+
+	// Enviar la cantidad de batches al servidor en formato int32 (big-endian)
+	batchCount := int32(len(batches))
+	batchCountBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(batchCountBytes, uint32(batchCount))
+
+	if err := SendAll(c.conn, batchCountBytes); err != nil {
+		log.Errorf("action: send_batch_count | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return
+	}
 
 	for _, batch := range batches {
 		// Serializar batch

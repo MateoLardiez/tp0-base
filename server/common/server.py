@@ -55,27 +55,36 @@ class Server:
         client socket will also be closed
         """
         try:
-            
-            batch_size = receive_integer(client_sock)
-            if batch_size is None:
+            total_bets = 0
+            amount_batchs = receive_integer(client_sock)
+            if amount_batchs is None:
                 client_sock.sendall("ERROR\n".encode('utf-8'))
                 return
-
-            bets = []
-            for _ in range(batch_size):
-                bet = receive_bet(client_sock)
-                if bet is None:
-                    client_sock.sendall("ERROR\n".encode('utf-8'))
-                    return  # Si alguna apuesta falla, cancelamos todo
+            logging.info(f'action: amount_batchs | result: success | cantidad: {amount_batchs}')
             
-                bets.append(bet)
 
-            # Guardamos todas las apuestas en el archivo CSV
-            store_bets(bets)
+            for _ in range(amount_batchs):
+                batch_size = receive_integer(client_sock)
+                if batch_size is None:
+                    client_sock.sendall("ERROR\n".encode('utf-8'))
+                    return
 
-            logging.info(f'action: apuesta_recibida | result: success | cantidad: {batch_size}')
+                bets = []
+                for _ in range(batch_size):
+                    bet = receive_bet(client_sock)
+                    if bet is None:
+                        client_sock.sendall("ERROR\n".encode('utf-8'))
+                        return  # Si alguna apuesta falla, cancelamos todo
+                    total_bets+=1
+                    bets.append(bet)
+
+                # Guardamos todas las apuestas en el archivo CSV
+                store_bets(bets)
+                
+
+
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {total_bets}')
             client_sock.sendall("OK\n".encode('utf-8'))
-
 
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")

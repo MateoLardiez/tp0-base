@@ -266,4 +266,6 @@ Para el manejo de los errores short read y short write, el cliente utiliza la fu
 ## Resolucion ejercicio 6
 
 Ahora el cliente debe poder enviar muchas apuestas a la vez. Las apuestas las lee de un csv. Hay uno por cada agencia. Tambien se debe respetar un limite de apuestas enviadas enunciado en el yaml. 
-Para esto se adapta al cliente para que pueda leer todas las apuestas de su csv correspondiente. Esto lo hace la funcion ReadBetsFromCSV() la cual a partir de un filename, lee y arma todas las Bets de ese csv
+Para esto se adapta al cliente para que pueda leer todas las apuestas de su csv correspondiente. Se modifica el docker-compose agregando a cada cliente el archivo correspondiente a las bets que debe hacer. Luego se genera una funcion para leer el csv. Esto lo hace la funcion ReadBetsFromCSV() la cual a partir de un filename, lee y arma todas las Bets de ese csv.
+
+Se modifica levemente el protocolo para que se puedan enviar todas las bets correctamente. Primero se envia un entero que define la cantidad de batches que se van a enviar. Luego se comienza a enviar batch por batch. Cada batch envia al principio la cantidad de bets que va a enviar y luego empieza a enviar los bets con el protocolo ya definido.
