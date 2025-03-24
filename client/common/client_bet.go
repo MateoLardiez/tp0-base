@@ -3,7 +3,10 @@ package common
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/csv"
+	"fmt"
 	"net"
+	"os"
 )
 
 type Bet struct {
@@ -47,4 +50,88 @@ func SendAll(conn net.Conn, data []byte) error {
 		totalSent += n
 	}
 	return nil
+}
+
+// ReadBetsFromCSV lee un archivo CSV y devuelve una lista de apuestas
+func ReadBetsFromCSV(filename string, agencyID string) ([]Bet, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error abriendo el archivo CSV: %w", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("error leyendo el archivo CSV: %w", err)
+	}
+
+	var bets []Bet
+	for _, record := range records {
+		if len(record) < 5 {
+			continue // Saltar líneas inválidas
+		}
+		bets = append(bets, Bet{
+			Agency:    agencyID,
+			FirstName: record[0],
+			LastName:  record[1],
+			Document:  record[2],
+			Birthdate: record[3],
+			Number:    record[4],
+		})
+	}
+
+	return bets, nil
+}
+
+// SplitBetsIntoBatches divide una lista de apuestas en batches de tamaño máximo `batchSize` o de 8192 bytes(kb)
+func SplitBetsIntoBatches(bets []Bet, batchSize int) [][]Bet {
+	var batches [][]Bet
+	var currentBatch []Bet
+	var currentSize int
+
+	for _, bet := range bets {
+		serializedBet, err := SerializeBet(bet)
+		if err != nil {
+			log.Errorf("action: serialize_bet | result: fail | error: %v", err)
+			continue
+		}
+
+		betSize := len(serializedBet)
+
+		// Si agregar esta apuesta supera los 8191 bytes(1 byte para cant_bytes), cerramos el batch actual y empezamos uno nuevo
+		if currentSize+betSize > 8191 || len(currentBatch) >= batchSize {
+			batches = append(batches, currentBatch)
+			currentBatch = []Bet{}
+			currentSize = 0
+		}
+
+		currentBatch = append(currentBatch, bet)
+		currentSize += betSize
+	}
+
+	// Agregar el último batch si no está vacío
+	if len(currentBatch) > 0 {
+		batches = append(batches, currentBatch)
+	}
+
+	return batches
+}
+
+func SerializeBatch(bets []Bet) ([]byte, error) {
+	var buf bytes.Buffer
+	// Escribir la cantidad de apuestas como un entero al inicio
+	if err := binary.Write(&buf, binary.BigEndian, int32(len(bets))); err != nil {
+		return nil, err
+	}
+	for _, bet := range bets {
+		serializedBet, err := SerializeBet(bet)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := buf.Write(serializedBet); err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
 }

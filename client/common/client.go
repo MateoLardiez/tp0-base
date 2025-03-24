@@ -22,6 +22,7 @@ type ClientConfig struct {
 	ServerAddress string
 	LoopAmount    int
 	LoopPeriod    time.Duration
+	BatchAmount   int
 }
 
 // Client Entity that encapsulates how
@@ -97,12 +98,8 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
-func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
+func (c *Client) SendBetToServer() {
 	bet, err := c.GetBetData()
-	c.createClientSocket()
 
 	if err != nil {
 		log.Errorf("action: get_bet_data | result: fail | client_id: %v | error: %v",
@@ -112,6 +109,7 @@ func (c *Client) StartClientLoop() {
 		return
 	}
 
+	c.createClientSocket()
 	// Serializar la apuesta con bet.go
 	data, err := SerializeBet(bet)
 	if err != nil {
@@ -121,6 +119,7 @@ func (c *Client) StartClientLoop() {
 		)
 		return
 	}
+
 	// Enviar la apuesta al servidor
 	err_send := SendAll(c.conn, data)
 	if err_send != nil {
@@ -159,8 +158,65 @@ func (c *Client) StartClientLoop() {
 		c.config.ID,
 	)
 
-	// Wait a time between sending one message and the next one
-	time.Sleep(c.config.LoopPeriod)
+}
 
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+func (c *Client) SendBetsInBatch() {
+	// Leer apuestas del CSV
+	bets, err := ReadBetsFromCSV(fmt.Sprintf("dataAgencies/agency-%s.csv", c.config.ID), c.config.ID)
+	if err != nil {
+		log.Errorf("action: read_bets | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return
+	}
+
+	// Dividir en batches según la configuración
+	batches := SplitBetsIntoBatches(bets, c.config.BatchAmount)
+
+	// Crear socket
+	if err := c.createClientSocket(); err != nil {
+		log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return
+	}
+	defer c.conn.Close() //Para cerrar el socket automaticamente al finalizar la función
+
+	for _, batch := range batches {
+		// Serializar batch
+		data, err := SerializeBatch(batch)
+		if err != nil {
+			log.Errorf("action: serialize_batch | result: fail | client_id: %v | error: %v", c.config.ID, err)
+			continue
+		}
+
+		// Enviar batch al servidor
+		if err := SendAll(c.conn, data); err != nil {
+			log.Errorf("action: send_batch | result: fail | client_id: %v | error: %v", c.config.ID, err)
+			continue
+		}
+
+		// Recibir confirmación del servidor
+		response, err := bufio.NewReader(c.conn).ReadString('\n')
+		if err != nil {
+			log.Errorf("action: receive_confirmation | result: fail | client_id: %v | error: %v", c.config.ID, err)
+			continue
+		}
+		response = strings.TrimSpace(response)
+
+		// Loguear respuesta
+		if response == "OK" {
+			log.Infof("action: batch_enviado | result: success | cantidad: %d", len(batch))
+		} else {
+			log.Warningf("action: batch_enviado | result: fail | cantidad: %d | response: %v", len(batch), response)
+		}
+	}
+
+	log.Infof("action: envio_batches_completo | result: success | client_id: %v", c.config.ID)
+}
+
+// StartClientLoop Send messages to the client until some time threshold is met
+func (c *Client) StartClientLoop() {
+	// There is an autoincremental msgID to identify every message sent
+	// Messages if the message amount threshold has not been surpassed
+
+	c.SendBetsInBatch()
+
+	log.Infof("action: bets_sent | result: success | client_id: %v", c.config.ID)
 }

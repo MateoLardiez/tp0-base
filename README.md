@@ -262,3 +262,8 @@ Del lado del servidor, la funcion receive_bet() que se encuentra en el archivo m
 Para el manejo de los errores short read y short write, el cliente utiliza la funcion sendAll(), la cual se queda en un bucle hasta que haya enviado todos los bytes correspondientes. Del lado del servidor se encuentra la funcion recv_all() la cual se queda en un bucle hasta recibir la cantidad ede bytes correspondientes
 
 ![alt text](ImgPruebas/pruebasEj5.png)
+
+## Resolucion ejercicio 6
+
+Ahora el cliente debe poder enviar muchas apuestas a la vez. Las apuestas las lee de un csv. Hay uno por cada agencia. Tambien se debe respetar un limite de apuestas enviadas enunciado en el yaml. 
+Para esto se adapta al cliente para que pueda leer todas las apuestas de su csv correspondiente. Esto lo hace la funcion ReadBetsFromCSV() la cual a partir de un filename, lee y arma todas las Bets de ese csv

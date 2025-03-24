@@ -55,3 +55,23 @@ def receive_bet(client_sock):
     except (OSError, struct.error) as e:
         logging.error(f"Error al recibir la apuesta: {e}")
         return None
+
+def receive_integer(client_sock) -> int:
+    """
+    Recibe un entero de 4 bytes desde un socket de cliente.
+
+    Args:
+        client_sock: socket del cliente.
+
+    Returns:
+        El entero recibido si la recepción es exitosa, None en caso de error.
+    """
+    try:
+        data = recv_all(client_sock, 4)
+        if not data or len(data) != 4:
+            logging.error("Error al recibir el entero")
+            return None
+        return struct.unpack("!I", data)[0]
+    except (OSError, struct.error) as e:
+        logging.error(f"Error al recibir el entero: {e}")
+        return None

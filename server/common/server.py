@@ -5,6 +5,7 @@ import sys
 sys.path.append('.')
 from common.utils import store_bets
 from common.msg_bet import receive_bet
+from common.msg_bet import receive_integer
 
 
 class Server:
@@ -55,14 +56,26 @@ class Server:
         """
         try:
             
-            bet = receive_bet(client_sock)
-
-            if bet:
-                store_bets([bet])  # Guardamos la apuesta en el archivo CSV
-                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
-                client_sock.sendall("OK\n".encode('utf-8'))
-            else:
+            batch_size = receive_integer(client_sock)
+            if batch_size is None:
                 client_sock.sendall("ERROR\n".encode('utf-8'))
+                return
+
+            bets = []
+            for _ in range(batch_size):
+                bet = receive_bet(client_sock)
+                if bet is None:
+                    client_sock.sendall("ERROR\n".encode('utf-8'))
+                    return  # Si alguna apuesta falla, cancelamos todo
+            
+                bets.append(bet)
+
+            # Guardamos todas las apuestas en el archivo CSV
+            store_bets(bets)
+
+            logging.info(f'action: apuesta_recibida | result: success | cantidad: {batch_size}')
+            client_sock.sendall("OK\n".encode('utf-8'))
+
 
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
