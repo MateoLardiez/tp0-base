@@ -1,6 +1,7 @@
 import struct
 import logging
-from utils import Bet
+from common.utils import Bet
+
 
 
 def recv_all(sock, size):
@@ -42,11 +43,11 @@ def receive_bet(client_sock):
 
         # Extraer los valores según los tamaños informados
         agency_number = received_data[:agency_len].decode('utf-8')
-        name = received_data[:name_len].decode('utf-8')
-        surname = received_data[name_len:name_len + surname_len].decode('utf-8')
-        dni = received_data[name_len + surname_len:name_len + surname_len + dni_len].decode('utf-8')
-        birthdate = received_data[name_len + surname_len + dni_len:name_len + surname_len + dni_len + birthdate_len].decode('utf-8')
-        number = received_data[name_len + surname_len + dni_len + birthdate_len:].decode('utf-8')
+        name = received_data[agency_len:agency_len + name_len].decode('utf-8')
+        surname = received_data[agency_len + name_len:name_len + surname_len].decode('utf-8')
+        dni = received_data[agency_len + name_len + surname_len:agency_len + name_len + surname_len + dni_len].decode('utf-8')
+        birthdate = received_data[agency_len + name_len + surname_len + dni_len:agency_len + name_len + surname_len + dni_len + birthdate_len].decode('utf-8')
+        number = received_data[agency_len + name_len + surname_len + dni_len + birthdate_len:].decode('utf-8')
 
         # Crear y devolver la apuesta
         return Bet(agency_number, name, surname, dni, birthdate, number)

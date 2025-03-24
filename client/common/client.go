@@ -2,9 +2,11 @@ package common
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -44,19 +46,24 @@ func NewClient(config ClientConfig) *Client {
 }
 
 func (c *Client) GetBetData() (Bet, error) {
-	nombre := os.Getenv("CLI_NOMBRE")
-	apellido := os.Getenv("CLI_APELLIDO")
-	documento := os.Getenv("CLI_DOCUMENTO")
-	nacimiento := os.Getenv("CLI_NACIMIENTO")
-	numero := os.Getenv("CLI_NUMERO")
+	firstName := os.Getenv("CLI_NOMBRE")
+	lastName := os.Getenv("CLI_APELLIDO")
+	document := os.Getenv("CLI_DOCUMENTO")
+	birthDate := os.Getenv("CLI_NACIMIENTO")
+	number := os.Getenv("CLI_NUMERO")
+
+	matched, err := regexp.MatchString(`^\d{4}-\d{2}-\d{2}$`, birthDate)
+	if err != nil || !matched {
+		return Bet{}, fmt.Errorf("invalid birthdate format: %s", birthDate)
+	}
 
 	var bet = Bet{
 		Agency:    c.config.ID,
-		FirstName: nombre,
-		LastName:  apellido,
-		Document:  documento,
-		Birthdate: nacimiento,
-		Number:    numero,
+		FirstName: firstName,
+		LastName:  lastName,
+		Document:  document,
+		Birthdate: birthDate,
+		Number:    number,
 	}
 	log.Debugf("action: bet created | result: success | bet: %v", bet)
 
@@ -180,7 +187,7 @@ func (c *Client) StartClientLoop() {
 		}
 	*/
 
-	log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
+	log.Infof("action: receive_message | result: success | client_id: %v",
 		c.config.ID,
 	)
 

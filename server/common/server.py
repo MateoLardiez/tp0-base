@@ -2,9 +2,9 @@ import socket
 import logging
 import signal
 import sys
-from utils import store_bets
-import struct
-from msg_bet import receive_bet
+sys.path.append('.')
+from common.utils import store_bets
+from common.msg_bet import receive_bet
 
 
 class Server:
