@@ -97,18 +97,6 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
-func sendAll(conn net.Conn, data []byte) error {
-	totalSent := 0
-	for totalSent < len(data) {
-		n, err := conn.Write(data[totalSent:])
-		if err != nil {
-			return err
-		}
-		totalSent += n
-	}
-	return nil
-}
-
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
@@ -134,7 +122,7 @@ func (c *Client) StartClientLoop() {
 		return
 	}
 	// Enviar la apuesta al servidor
-	err_send := sendAll(c.conn, data)
+	err_send := SendAll(c.conn, data)
 	if err_send != nil {
 		log.Errorf("action: send_bet | result: fail | client_id: %v | error: %v",
 			c.config.ID,
@@ -166,26 +154,6 @@ func (c *Client) StartClientLoop() {
 			response,
 		)
 	}
-
-	/*
-		// TODO: Modify the send to avoid short-write
-		fmt.Fprintf(
-			c.conn,
-			"[CLIENT %v] Message N°%v\n",
-			c.config.ID,
-			msgID,
-		)
-		msg, err := bufio.NewReader(c.conn).ReadString('\n')
-		c.conn.Close()
-
-		if err != nil {
-			log.Errorf("action: receive_message | result: fail | client_id: %v | error: %v",
-				c.config.ID,
-				err,
-			)
-			return
-		}
-	*/
 
 	log.Infof("action: receive_message | result: success | client_id: %v",
 		c.config.ID,

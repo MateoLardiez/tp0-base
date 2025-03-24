@@ -245,13 +245,20 @@ Todas las pruebas de la catedra pasan exitosamente:
 
 Protocolo de comunicacion:
 
-JSON:
-{
-    "nombre": "Santiago Lionel",
-    "apellido": "Lorca",
-    "documento": "30904465",
-    "nacimiento": "1999-03-17",
-    "numero": 7574
+type Bet struct {
+	Agency    string
+	FirstName string
+	LastName  string
+	Document  string
+	Birthdate string
+	Number    string
 }
 
+
 El cliente le envia al servidor 6 enteros, los cuales definen el largo de cada atributo del cliente en orden (AGENCY, NOMBRE, APELLIDO, DOCUMENTO, NACIMIENTO, NUMERO). El servidor procede a recibir la cantidad de bytes como sea la suma de estos 6 valores enteros y luego hace el parseo para cada atributo, sabiendo su tamanio. Los protocolos de comunicacion se manejan en archivos separados al server y client. client_bet.go para el cliente y msg_bet.py para el servidor. De esta manera ni el cliente ni el servidor conocen el protocolo de comunicacion
+
+Del lado del cliente, la funcion SerializeBet() que se encuentra en el archivo client_bet.go, se encarca de generar la cadena de bytes correspondientes acorde al protocolo indicado, que se va a enviar al servidor a travez del socket
+Del lado del servidor, la funcion receive_bet() que se encuentra en el archivo msg_bet.py, se encarga de leer todos esos bytes en el orden correspondiente y formar nuevamente la Bet del lado del servidor, para almacenarla.
+Para el manejo de los errores short read y short write, el cliente utiliza la funcion sendAll(), la cual se queda en un bucle hasta que haya enviado todos los bytes correspondientes. Del lado del servidor se encuentra la funcion recv_all() la cual se queda en un bucle hasta recibir la cantidad ede bytes correspondientes
+
+![alt text](ImgPruebas/pruebasEj5.png)
