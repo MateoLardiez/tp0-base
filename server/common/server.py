@@ -2,7 +2,7 @@ import socket
 import logging
 import signal
 import sys
-from utils import store_bets, Bet
+from utils import store_bets
 import struct
 from msg_bet import receive_bet
 
