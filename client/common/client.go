@@ -162,7 +162,7 @@ func (c *Client) SendBetToServer() {
 
 func (c *Client) SendBetsInBatch() {
 	// Leer apuestas del CSV
-	bets, err := ReadBetsFromCSV(fmt.Sprintf("dataAgencies/agency-%s.csv", c.config.ID), c.config.ID)
+	bets, err := ReadBetsFromCSV(fmt.Sprintf("./agency-%s.csv", c.config.ID), c.config.ID)
 	if err != nil {
 		log.Errorf("action: read_bets | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		return

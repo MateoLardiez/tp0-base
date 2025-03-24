@@ -15,6 +15,7 @@ def generar_clientes(n):
       - testing_net
     volumes:
       - ./client/config.yaml:/config.yaml
+      - ./.data/agency-{i}.csv:/agency-{i}.csv
     depends_on:
       - server
     """
