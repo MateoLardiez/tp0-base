@@ -2,10 +2,10 @@ package common
 
 import (
 	"bufio"
-	"fmt"
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -43,6 +43,26 @@ func NewClient(config ClientConfig) *Client {
 	return client
 }
 
+func (c *Client) GetBetData() (Bet, error) {
+	nombre := os.Getenv("CLI_NOMBRE")
+	apellido := os.Getenv("CLI_APELLIDO")
+	documento := os.Getenv("CLI_DOCUMENTO")
+	nacimiento := os.Getenv("CLI_NACIMIENTO")
+	numero := os.Getenv("CLI_NUMERO")
+
+	var bet = Bet{
+		Agency:    c.config.ID,
+		FirstName: nombre,
+		LastName:  apellido,
+		Document:  documento,
+		Birthdate: nacimiento,
+		Number:    numero,
+	}
+	log.Debugf("action: bet created | result: success | bet: %v", bet)
+
+	return bet, nil
+}
+
 // handleShutdown maneja SIGTERM y cierra la conexión correctamente
 func (c *Client) handleShutdown() {
 	<-c.stop // Bloquea hasta que reciba SIGTERM o SIGINT
@@ -74,10 +94,61 @@ func (c *Client) createClientSocket() error {
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
-	for msgID := 1; msgID <= c.config.LoopAmount; msgID++ {
-		// Create the connection the server in every loop iteration. Send an
-		c.createClientSocket()
+	bet, err := c.GetBetData()
+	c.createClientSocket()
 
+	if err != nil {
+		log.Errorf("action: get_bet_data | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+
+	// Serializar la apuesta con bet.go
+	data, err := SerializeBet(bet)
+	if err != nil {
+		log.Errorf("action: serialize_bet | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+	// Enviar la apuesta al servidor
+	_, err_send := c.conn.Write(data)
+	if err_send != nil {
+		log.Errorf("action: send_bet | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err_send,
+		)
+		return
+	}
+
+	// Recibir confirmación del servidor
+	response, err := bufio.NewReader(c.conn).ReadString('\n')
+	if err != nil {
+		log.Errorf("action: receive_confirmation | result: fail | client_id: %v | error: %v",
+			c.config.ID,
+			err,
+		)
+		return
+	}
+
+	// Loggear la respuesta del servidor
+	response = strings.TrimSpace(response) // Remover espacios o saltos de línea
+	if response == "OK" {
+		log.Infof("action: apuesta_enviada | result: success | dni: %v | numero: %v",
+			bet.Document,
+			bet.Number,
+		)
+	} else {
+		log.Warningf("action: receive_confirmation | result: error | client_id: %v | response: %v",
+			c.config.ID,
+			response,
+		)
+	}
+
+	/*
 		// TODO: Modify the send to avoid short-write
 		fmt.Fprintf(
 			c.conn,
@@ -95,15 +166,14 @@ func (c *Client) StartClientLoop() {
 			)
 			return
 		}
+	*/
 
-		log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
-			c.config.ID,
-			msg,
-		)
+	log.Infof("action: receive_message | result: success | client_id: %v | msg: %v",
+		c.config.ID,
+	)
 
-		// Wait a time between sending one message and the next one
-		time.Sleep(c.config.LoopPeriod)
+	// Wait a time between sending one message and the next one
+	time.Sleep(c.config.LoopPeriod)
 
-	}
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

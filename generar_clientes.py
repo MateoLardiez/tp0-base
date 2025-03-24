@@ -12,6 +12,11 @@ def generar_clientes(n):
     environment:
       - CLI_ID={i}
       - LOGGING_LEVEL=DEBUG
+      - CLI_NOMBRE=Santiago Lionel
+      - CLI_APELLIDO=Lorca
+      - CLI_DOCUMENTO=30904465
+      - CLI_NACIMIENTO=1999-03-17
+      - CLI_NUMERO=7574
     networks:
       - testing_net
     volumes:

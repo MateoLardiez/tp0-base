@@ -2,6 +2,10 @@ import socket
 import logging
 import signal
 import sys
+from utils import store_bets, Bet
+import struct
+from msg_bet import receive_bet
+
 
 class Server:
     def __init__(self, port, listen_backlog):
@@ -34,7 +38,6 @@ class Server:
         finishes, servers starts to accept new connections again
         """
 
-        # TODO: Modify this program to handle signal to graceful shutdown
         # the server
         while self.running:
             try:
@@ -51,13 +54,16 @@ class Server:
         client socket will also be closed
         """
         try:
-            # TODO: Modify the receive to avoid short-reads
-            msg = client_sock.recv(1024).rstrip().decode('utf-8')
-            addr = client_sock.getpeername()
-            self.clients_connected.append(client_sock)
-            logging.info(f'action: receive_message | result: success | ip: {addr[0]} | msg: {msg}')
-            # TODO: Modify the send to avoid short-writes
-            client_sock.send("{}\n".format(msg).encode('utf-8'))
+            
+            bet = receive_bet(client_sock)
+
+            if bet:
+                store_bets([bet])  # Guardamos la apuesta en el archivo CSV
+                logging.info(f'action: apuesta_almacenada | result: success | dni: {bet.document} | numero: {bet.number}')
+                client_sock.sendall("OK\n".encode('utf-8'))
+            else:
+                client_sock.sendall("ERROR\n".encode('utf-8'))
+
         except OSError as e:
             logging.error("action: receive_message | result: fail | error: {e}")
         finally:

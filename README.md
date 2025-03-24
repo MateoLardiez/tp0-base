@@ -239,3 +239,19 @@ Se agrega una variable que pueda detectar la senial y un booleano para parar de 
 
 Todas las pruebas de la catedra pasan exitosamente:
 ![alt text](ImgPruebas/pruebasEj4.png)
+
+
+## Resolucion ejercicio 5
+
+Protocolo de comunicacion:
+
+JSON:
+{
+    "nombre": "Santiago Lionel",
+    "apellido": "Lorca",
+    "documento": "30904465",
+    "nacimiento": "1999-03-17",
+    "numero": 7574
+}
+
+El cliente le envia al servidor 6 enteros, los cuales definen el largo de cada atributo del cliente en orden (AGENCY, NOMBRE, APELLIDO, DOCUMENTO, NACIMIENTO, NUMERO). El servidor procede a recibir la cantidad de bytes como sea la suma de estos 6 valores enteros y luego hace el parseo para cada atributo, sabiendo su tamanio. Los protocolos de comunicacion se manejan en archivos separados al server y client. client_bet.go para el cliente y msg_bet.py para el servidor. De esta manera ni el cliente ni el servidor conocen el protocolo de comunicacion
