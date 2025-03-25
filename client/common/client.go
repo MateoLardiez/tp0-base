@@ -172,13 +172,6 @@ func (c *Client) SendBetsInBatch() {
 	// Dividir en batches según la configuración
 	batches := SplitBetsIntoBatches(bets, c.config.BatchAmount)
 
-	// Crear socket
-	if err := c.createClientSocket(); err != nil {
-		log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err)
-		return
-	}
-	defer c.conn.Close() // Para cerrar el socket automáticamente al finalizar la función
-
 	// Enviar la cantidad de batches al servidor en formato int32 (big-endian)
 	batchCount := int32(len(batches))
 	batchCountBytes := make([]byte, 4)
@@ -224,8 +217,15 @@ func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
 	// Messages if the message amount threshold has not been surpassed
 
+	// Crear socket
+	if err := c.createClientSocket(); err != nil {
+		log.Errorf("action: create_socket | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return
+	}
+	defer c.conn.Close() // Para cerrar el socket automáticamente al finalizar la función
+
 	c.SendBetsInBatch()
 
-	log.Infof("action: bets_sent | result: success | client_id: %v", c.config.ID)
+	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 
 }
