@@ -226,6 +226,44 @@ func (c *Client) StartClientLoop() {
 
 	c.SendBetsInBatch()
 
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	// Notificar al servidor que terminó
+	_, err := c.conn.Write([]byte("END\n"))
+	if err != nil {
+		log.Errorf("action: notify_end | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return
+	}
+	log.Infof("action: notify_end | result: success | client_id: %v", c.config.ID)
 
+	// Esperar respuesta con los ganadores
+	winners := c.ReceiveWinners()
+	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", len(winners))
+
+	time.Sleep(c.config.LoopPeriod)
+	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+}
+
+// Recibir lista de ganadores
+func (c *Client) ReceiveWinners() []string {
+	// Esto esta mal. Recibe un mensaje que no es le indicado (client_sock.sendall(f"{agency}: {winners}\n".encode('utf-8')))
+	buffer := make([]byte, 4096)
+	n, err := c.conn.Read(buffer)
+	if err != nil {
+		log.Errorf("action: receive_winners | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return nil
+	}
+	data := string(buffer[:n])
+	data = strings.TrimSpace(data)
+
+	// Parsear el mensaje recibido en el formato "agency: winners"
+	parts := strings.SplitN(data, ": ", 2)
+	if len(parts) != 2 {
+		log.Warningf("action: parse_winners | result: fail | client_id: %v | message: %v", c.config.ID, data)
+		return nil
+	}
+
+	agency := parts[0]
+	winners := strings.Split(parts[1], ",")
+	log.Infof("action: receive_winners | result: success | agency: %v | winners: %v", agency, winners)
+
+	return winners
 }
