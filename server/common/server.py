@@ -2,6 +2,7 @@ import socket
 import logging
 import signal
 import sys
+import time
 sys.path.append('.')
 from common.utils import store_bets
 from common.msg_bet import receive_bet
@@ -12,7 +13,7 @@ from common.msg_bet import send_winners
 
 
 class Server:
-    def __init__(self, port, listen_backlog):
+    def __init__(self, port, listen_backlog, clients_amount):
         # Initialize server socket
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_socket.bind(('', port))
@@ -20,7 +21,8 @@ class Server:
         self.running = True
         signal.signal(signal.SIGTERM, self.shutdown)
         self.clients_connected = {}
-        self.notified_agencies = set()
+        self.clients_amount = clients_amount
+        self.notified_agencies = list()
         self.winners = dict()
         self.lottery_run = False
 
@@ -44,6 +46,8 @@ class Server:
             client_sock.close()
             return -1
         # Actualizo el client_sock, si es un cliente viejo o creo una clave nueva, si es un cliente nuevo
+        if agency_number in self.clients_connected:
+            logging.info(f"YA ESTABA CONECTADO EL CLIENTE {agency_number}")
         self.clients_connected[agency_number] = client_sock
 
         logging.info(f'action: receive_client | result: success | agency_number: {agency_number}')
@@ -148,25 +152,29 @@ class Server:
 
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {total_bets}')
             client_sock.sendall("OK\n".encode('utf-8'))
-            
+                        
             msg = client_sock.recv(1024).decode('utf-8').strip()
             if msg == "END":
-                self.notified_agencies.add(client_sock)
+                self.notified_agencies.append(client_sock)
             
-            if (not self.lottery_run) and (len(self.notified_agencies) == len(self.clients_connected)):
+            if (not self.lottery_run) and (len(self.notified_agencies) == self.clients_amount):
+                time.sleep(1) # Para logs
+
                 self.sort_winners()
                 actual_client_sock = client_sock
                 for agency, winners_of_agency in self.winners.items():
                     actual_client_sock = self.clients_connected[agency]
                     send_winners(actual_client_sock, winners_of_agency)
-                    actual_client_sock.close() # Aca si cierro el socket
+                    
+                for agency, client_sock in self.clients_connected.items():
+                    client_sock.close()
                     logging.info(f"action: cerrando_conexion | result: success | agency: {agency}")
-                    self.clients_connected.pop(agency)
-                    self.notified_agencies.remove(actual_client_sock)
 
         except OSError as e:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
             logging.error("action: receive_message | result: fail | error: {e}")
+        
+        # Para los tests
         #finally:
         #    client_sock.close()
 

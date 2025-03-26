@@ -19,6 +19,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - LOGGING_LEVEL=DEBUG
+      - CLIENTS_AMOUNT=$NUM_CLIENTS
     networks:
       - testing_net
     volumes:
