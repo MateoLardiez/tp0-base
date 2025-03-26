@@ -24,7 +24,7 @@ class Server:
         self.clients_connected = {}
         self.clients_amount = clients_amount
         self.notified_agencies = 0
-        self.winners = {agency_id: [] for agency_id in range(1, self.clients_amount + 1)}
+        self.winners = {}
         self.lottery_run = False
 
     def shutdown(self, signum, frame):
@@ -50,6 +50,7 @@ class Server:
         if agency_number in self.clients_connected:
             logging.info(f"YA ESTABA CONECTADO EL CLIENTE {agency_number}")
         self.clients_connected[agency_number] = client_sock
+        self.winners[agency_number] = []
 
         logging.info(f'action: receive_client | result: success | agency_number: {agency_number}')
         return 0
@@ -112,8 +113,6 @@ class Server:
         bets = load_bets()
         for bet in bets:
             if has_won(bet):
-                #if bet.agency not in self.winners:
-                #    self.winners[bet.agency] = []
                 self.winners[bet.agency].append(bet.document)
         self.lottery_run = True
         logging.info(f'action: sort_winners | result: success')
