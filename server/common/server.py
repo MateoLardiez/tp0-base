@@ -4,12 +4,10 @@ import signal
 import sys
 import time
 sys.path.append('.')
-from common.utils import store_bets
-from common.msg_bet import receive_bet
-from common.msg_bet import receive_integer
-from common.utils import load_bets
-from common.utils import has_won
-from common.msg_bet import send_winners
+from common.utils import store_bets, load_bets, has_won
+from common.msg_bet import receive_bet, receive_integer, send_winners
+
+from multiprocessing import Process, Barrier, Manager, Lock, Value
 
 
 
@@ -21,11 +19,18 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self.running = True
         signal.signal(signal.SIGTERM, self.shutdown)
-        self.clients_connected = {}
         self.clients_amount = clients_amount
-        self.notified_agencies = 0
-        self.winners = {}
-        self.lottery_run = False
+
+        manager = Manager()
+
+        self.clients_connected = dict() #No creo q haga falta. Se usa en el add y desp en handle_bets
+        self.notified_agencies = Value('i', 0)
+        #self.winners = dict()
+        self.winners = manager.dict()
+        self.lottery_run = Value('b', False)
+        self.bets_file_lock = Lock()
+        self.variables_lock = Lock()
+        self.start_lottery_barrier = Barrier(clients_amount)
 
     def shutdown(self, signum, frame):
         """Maneja SIGTERM cerrando el socket correctamente"""
@@ -34,6 +39,11 @@ class Server:
             addr = client_socket.getpeername()
             logging.warning(f'clossing gracefully connection with client address: {addr[0]}, agency {agency}')
             client_socket.close()
+
+        for process in self.processes:
+            process.terminate()
+            process.join()
+        
         self._server_socket.close()
         logging.warning("action: shutdown | result: success")
         sys.exit(0)
@@ -65,6 +75,7 @@ class Server:
         """
 
         # the server
+        processes = []  
         while self.running:
             try:
                 client_sock = self.__accept_new_connection()
@@ -73,9 +84,22 @@ class Server:
                     logging.error(f'action: receive_client | result: fail | ip: {client_sock.getpeername()[0]}')
                     client_sock.close()
                     return
-                self.__handle_client_connection(client_sock)
+                process = Process(target=self.__handle_client_connection, args=(client_sock,))
+                processes.append(process)
+                process.start()
+
             except OSError:
                 break
+
+        # Wait for all processes to finish
+        for process in processes:
+            try:
+                process.join()
+            except:
+                logging.error(f"action: closing_processes | result: fail | process_name: {process.name} | process_id: {process.pid}")
+        
+        logging.info("action: server_loop_ended | result: success")
+        
 
 
     def receive_bets(self, client_sock, total_bets):
@@ -104,7 +128,9 @@ class Server:
                 total_bets+=1
                 bets.append(bet)
 
-            store_bets(bets)
+            # Lock para evitar condiciones de carrera al escribir en el archivo
+            with self.bets_file_lock:
+                store_bets(bets)
 
         return total_bets
 
@@ -113,9 +139,33 @@ class Server:
         bets = load_bets()
         for bet in bets:
             if has_won(bet):
-                self.winners[bet.agency].append(bet.document)
-        self.lottery_run = True
+                # Obtener la lista actual de ganadores para la agencia
+                current_winners = self.winners.get(bet.agency, [])
+                
+                # Agregar el nuevo ganador a la lista
+                current_winners.append(bet.document)
+                
+                # Reasignar la lista actualizada al diccionario compartido
+                self.winners[bet.agency] = current_winners
+        self.lottery_run.value = True
         logging.info(f'action: sort_winners | result: success')
+
+    def handle_bets(self, client_sock):
+        """Maneja el envio de los ganadores a la agencia"""
+        logging.info(f'action: handle_bets | result: in_progress')
+        with self.variables_lock:
+            if (not self.lottery_run.value) and (self.notified_agencies.value == self.clients_amount):
+                logging.info(f'action: handle_bets | result: in_progress | notified_agencies: {self.notified_agencies.value} | clients_amount: {self.clients_amount}')
+                #time.sleep(1) # Para logs
+                self.sort_winners()
+                #actual_client_sock = client_sock
+                #for agency, winners_of_agency in self.winners.items():
+                #    actual_client_sock = self.clients_connected[agency]
+                #    send_winners(actual_client_sock, winners_of_agency)
+            
+                #for agency, client_sock in self.clients_connected.items():
+                #    client_sock.close()
+                #    logging.info(f"action: cerrando_conexion | result: success | agency: {agency}")
 
 
     def __handle_client_connection(self, client_sock):
@@ -137,28 +187,28 @@ class Server:
                         
             msg = client_sock.recv(1024).decode('utf-8').strip()
             if msg == "END":
-                self.notified_agencies += 1
-            
-            time.sleep(1) # Para logs
+                with self.variables_lock:
+                    self.notified_agencies.value += 1
 
-            if (not self.lottery_run) and (self.notified_agencies == self.clients_amount):
-                time.sleep(1) # Para logs
-                self.sort_winners()
-                actual_client_sock = client_sock
-                for agency, winners_of_agency in self.winners.items():
-                    actual_client_sock = self.clients_connected[agency]
-                    send_winners(actual_client_sock, winners_of_agency)
-                    
-                for agency, client_sock in self.clients_connected.items():
-                    client_sock.close()
-                    logging.info(f"action: cerrando_conexion | result: success | agency: {agency}")
+            agency_id = next((clave for clave, valor in self.clients_connected.items() if valor == client_sock), None)
+            logging.info(f"esperando barrera | agency_num: {agency_id} | notified_agencies: {self.notified_agencies.value} | clients_amount: {self.clients_amount}")
+            self.start_lottery_barrier.wait()  # Espera a que todos los clientes envíen "END"
+            logging.info(f'action: sorteo | result: success')
+
+            # time.sleep(1) # Para logs
+
+            self.handle_bets(client_sock)
+
+            with self.variables_lock:
+                send_winners(client_sock, self.winners[agency_id])
 
         except OSError as e:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
             logging.error("action: receive_message | result: fail | error: {e}")
         
-        #finally:
-        #    client_sock.close()
+        finally:
+            client_sock.close()
+            logging.info(f"action: cerrando_conexion | result: success | agency: {agency_id}")
 
     def __accept_new_connection(self):
         """

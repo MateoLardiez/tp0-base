@@ -96,7 +96,6 @@ def send_winners(client_sock, winners):
     """
     # Convertir la cantidad de ganadores a 4 bytes (big-endian)
     num_winners = len(winners)
-    logging.info(f'GANADORES cantidad: {num_winners}')
     data = struct.pack("!I", num_winners)
 
     if num_winners > 0:

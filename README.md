@@ -294,3 +294,19 @@ Al enviarse todos los ganadores a todas las agencias, el servidor procede a cerr
 
 Las pruebas de la catedra pasan correctamente:
 ![alt text](ImgPruebas/pruebasEj7.png)
+
+## Resolucion ejercicio 8
+
+El ejercicio pide modificar el servidor para ejecutar los clientes en pararelo. Como usar threads en python trae complicaciones, combiene utilizar procesos. Para esto se utiliza la libreria multiprocessing, utilizando Process, Manager, Lock, Barrier y Value.
+
+Por cada cliente se lanza un Process que maneja toda la recepcion de bets por parte de ese cliente particular.
+Hay distintos recursos compartidos que deben manejarse correctamente, los cuales son:
+- El entero notified_agencies. Se maneja con Values para que persista el cambio de su valor en los distintos procesos
+- El diccionario de winners. Se maneja con Manager.dict()
+- El archivo donde se guardan las bets. Se maneja con un lock solo para este, el cual es bet_file_lock
+- El booleano lotery_run que define cuando se sortearon las bets. Se maneja con Values para que persista en los distintos procesos.
+Para acceder a cada una de estas variables compartidas, el proceso debe obtener el variables_lock
+
+Luego se utiliza una barrera winners_barrier para sincronizar todos los procesos en un mismo punto el cual es esperar a que todos hayan mandado las bets, para que el servidor pueda hacer las apuestas.
+
+Hay un cambio en el envio de las apuestas a cada cliente. Un proceso solo es el que va a ejecutar el sorteo de apuestas, obteniendo el variables_lock. Pero luego cada proceso va a ser el responsable de enviarle los winners al cliente/agencia que le corresponda (la que este "conectada"). Para esto nuevamente debe obtener el variables_lock antes.
