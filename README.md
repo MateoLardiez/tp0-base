@@ -291,3 +291,6 @@ Cuando se obtienen todos los ganadores, se procede a enviar los correspondientes
 Se envia primero un entero de 4 bytes que define la cantidad de winners que tiene esa agencia. Luego se envia por cada ganador, la cantidad de numeros que tiene el dni de ese ganador. Luego se envian todos los dnis de todos los ganadores de esa agencia. El cliente, al conocer el protocolo, puede rearmar la lista de ganadores correctamente.
 
 Al enviarse todos los ganadores a todas las agencias, el servidor procede a cerrar la conexion con el cliente.
+
+Las pruebas de la catedra pasan correctamente:
+![alt text](ImgPruebas/pruebasEj7.png)
