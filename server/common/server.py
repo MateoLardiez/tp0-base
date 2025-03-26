@@ -8,6 +8,7 @@ from common.msg_bet import receive_bet
 from common.msg_bet import receive_integer
 from common.utils import load_bets
 from common.utils import has_won
+from common.msg_bet import send_winners
 
 
 class Server:
@@ -18,20 +19,34 @@ class Server:
         self._server_socket.listen(listen_backlog)
         self.running = True
         signal.signal(signal.SIGTERM, self.shutdown)
-        self.clients_connected = []
+        self.clients_connected = {}
         self.notified_agencies = set()
         self.winners = dict()
+        self.lottery_run = False
 
     def shutdown(self, signum, frame):
         """Maneja SIGTERM cerrando el socket correctamente"""
         self.running = False
-        for client in self.clients_connected:
-            addr = client.getpeername()
-            logging.warning(f'clossing gracefully connection with client address: {addr[0]}')
-            client.close()
+        for agency,client_socket in self.clients_connected.items():
+            addr = client_socket.getpeername()
+            logging.warning(f'clossing gracefully connection with client address: {addr[0]}, agency {agency}')
+            client_socket.close()
         self._server_socket.close()
         logging.warning("action: shutdown | result: success")
         sys.exit(0)
+
+    def add_client(self, client_sock):
+        """Agrega un cliente a la lista de clientes conectados y obtiene nro de agencia"""
+        agency_number = receive_integer(client_sock)
+        if agency_number is None:
+            client_sock.sendall("ERROR\n".encode('utf-8'))
+            logging.error(f'action: receive_client | result: fail | ip: {client_sock.getpeername()[0]}')
+            client_sock.close()
+            return -1
+        self.clients_connected[agency_number] = client_sock
+
+        logging.info(f'action: receive_client | result: success | agency_number: {agency_number}')
+        return 0
 
     def run(self):
         """
@@ -46,8 +61,12 @@ class Server:
         while self.running:
             try:
                 client_sock = self.__accept_new_connection()
+                succes = self.add_client(client_sock)
+                if succes == -1:
+                    logging.error(f'action: receive_client | result: fail | ip: {client_sock.getpeername()[0]}')
+                    client_sock.close()
+                    return
                 self.__handle_client_connection(client_sock)
-                #client = self.add_client(client_sock)
             except OSError:
                 break
 
@@ -82,7 +101,7 @@ class Server:
 
         return 0
 
-    def sort_winners(self, client_sock):
+    def sort_winners(self):
         """Sortea los ganadores de las apuestas"""
         bets = load_bets()
         for bet in bets:
@@ -90,6 +109,8 @@ class Server:
                 if bet.agency not in self.winners:
                     self.winners[bet.agency] = []
                 self.winners[bet.agency].append(bet.document)
+        self.lottery_run = True
+        logging.info(f'action: sort_winners | result: success')
 
 
     def __handle_client_connection(self, client_sock):
@@ -113,11 +134,12 @@ class Server:
             if msg == "END":
                 self.notified_agencies.add(client_sock)
             
-            if len(self.notified_agencies) == 5:
-                self.sort_winners(client_sock)
+            if (not self.lottery_run) and (len(self.notified_agencies) == len(self.clients_connected)):
+                self.sort_winners()
+                actual_client_sock = client_sock
                 for agency, winners in self.winners.items():
-                    # Esto esta mal. Deberia enviar solo los winnners de cada agencia, pero no se me ocurre como
-                    client_sock.sendall(f"{agency}: {winners}\n".encode('utf-8'))
+                    actual_client_sock = self.clients_connected[agency]
+                    send_winners(actual_client_sock, winners)
                     
 
         except OSError as e:

@@ -281,8 +281,12 @@ Las pruebas de la catedra pasan correctamente:
 Se debe notificar a las agencias los correspondientes ganadores. Una vez que se almacenan todas las apuestas de todos los ganadores, el servidor recibe el mensaje de que se hicieron todas las apuestas y puede realizar el sorteo, para luego devolver el ganador a su correspondiente apuesta.
 
 Modificaciones del lado del cliente:
+Se agrega un primer mensaje del cliente al servidor cuando se logra conectar, el cual es un entero de 4 bytes que significa el ID de la agencia de ese cliente. Esto es para que el servidor asocie el client_socket con el agency_id determinado.
 Luego de enviar todas las bets, se envia un mensaje de END y se espera a recibir los ganadores, que los enviara el servidor cuando todas las agencias envien END
 
 Modificaciones del lado del servidor:
-Cuando se reciban todas las bets y el mensaje end, el contador de notificaciones de agencias se sumara a 1. Cuando este llegue a 5 (cant de agencias) se hace load_bets() y has_won() por cada ber. Las bets que ganaron se almacenan en un diccionario winners el cual contiene como clave el id de la agencia y como valor una lista de los ganadores de esa agencia. 
-FALTANTE: Luego se itera en ese diccionario y se envian los winners a cada agencia correspondiente. Me falta asociar el socket a cada agencia
+Se modifica la forma en que se guardan los clientes que se conectaron. El primer mensaje que recibe el servidor es el agency_id, entonces guarda los valores en un diccionario de clientes conectados, siendo la clave la agency_id y el valor el client_sock.
+Cuando se reciban todas las bets y el mensaje end, el contador de notificaciones de agencias se sumara a 1. Cuando este llegue a 5 (cant de agencias) se hace load_bets() y has_won() por cada ber. Las bets que ganaron se almacenan en un diccionario winners el cual contiene como clave el id de la agencia y como valor una lista de los ganadores de esa agencia.
+Cuando se obtienen todos los ganadores, se procede a enviar los correspondientes a cada agencia. Para esto se utiliza el mismo protocolo de comunicacion, pero de forma inversa:
+Se envia primero un entero de 4 bytes que define la cantidad de winners que tiene esa agencia. Luego se envia por cada ganador, la cantidad de numeros que tiene el dni de ese ganador. Luego se envian todos los dnis de todos los ganadores de esa agencia. El cliente, al conocer el protocolo, puede rearmar la lista de ganadores correctamente.
+

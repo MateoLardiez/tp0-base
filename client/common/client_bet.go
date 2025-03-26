@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -134,4 +135,37 @@ func SerializeBatch(bets []Bet) ([]byte, error) {
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+func ReceiveWinners(conn net.Conn) ([]string, error) {
+	var numWinners uint32
+
+	// Leer el número de ganadores (4 bytes)
+	err := binary.Read(conn, binary.BigEndian, &numWinners)
+	if err != nil {
+		return nil, fmt.Errorf("error reading number of winners: %w", err)
+	}
+
+	winners := make([]string, numWinners)
+
+	// Leer el tamaño de cada DNI (4 bytes cada uno)
+	dniSizes := make([]uint32, numWinners)
+	for i := uint32(0); i < numWinners; i++ {
+		err := binary.Read(conn, binary.BigEndian, &dniSizes[i])
+		if err != nil {
+			return nil, fmt.Errorf("error reading DNI size: %w", err)
+		}
+	}
+
+	// Leer los DNIs
+	for i := uint32(0); i < numWinners; i++ {
+		dniBytes := make([]byte, dniSizes[i])
+		_, err := io.ReadFull(conn, dniBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error reading DNI: %w", err)
+		}
+		winners[i] = string(dniBytes)
+	}
+
+	return winners, nil
 }

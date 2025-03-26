@@ -2,12 +2,14 @@ package common
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -212,6 +214,15 @@ func (c *Client) SendBetsInBatch() {
 	}
 }
 
+func SendAgencyID(conn net.Conn, agencyID uint32) error {
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, agencyID); err != nil {
+		return err
+	}
+	_, err := conn.Write(buf.Bytes())
+	return err
+}
+
 // StartClientLoop Send messages to the client until some time threshold is met
 func (c *Client) StartClientLoop() {
 	// There is an autoincremental msgID to identify every message sent
@@ -224,10 +235,23 @@ func (c *Client) StartClientLoop() {
 	}
 	defer c.conn.Close() // Para cerrar el socket automáticamente al finalizar la función
 
+	// Enviar numero de agencia al servidor
+	idStr := c.config.ID
+	idInt, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Fatalf("Error converting ID to int: %v", err)
+	}
+	agencyID := uint32(idInt)
+
+	if err := SendAgencyID(c.conn, agencyID); err != nil {
+		log.Errorf("action: send_agency_id | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return
+	}
+
 	c.SendBetsInBatch()
 
 	// Notificar al servidor que terminó
-	_, err := c.conn.Write([]byte("END\n"))
+	_, err = c.conn.Write([]byte("END\n"))
 	if err != nil {
 		log.Errorf("action: notify_end | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		return
@@ -235,35 +259,13 @@ func (c *Client) StartClientLoop() {
 	log.Infof("action: notify_end | result: success | client_id: %v", c.config.ID)
 
 	// Esperar respuesta con los ganadores
-	winners := c.ReceiveWinners()
+	winners, err := ReceiveWinners(c.conn)
+	if err != nil {
+		log.Errorf("action: consulta_ganadores | result: fail | client_id: %v | error: %v", c.config.ID, err)
+		return
+	}
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", len(winners))
 
-	time.Sleep(c.config.LoopPeriod)
-	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
-}
-
-// Recibir lista de ganadores
-func (c *Client) ReceiveWinners() []string {
-	// Esto esta mal. Recibe un mensaje que no es le indicado (client_sock.sendall(f"{agency}: {winners}\n".encode('utf-8')))
-	buffer := make([]byte, 4096)
-	n, err := c.conn.Read(buffer)
-	if err != nil {
-		log.Errorf("action: receive_winners | result: fail | client_id: %v | error: %v", c.config.ID, err)
-		return nil
-	}
-	data := string(buffer[:n])
-	data = strings.TrimSpace(data)
-
-	// Parsear el mensaje recibido en el formato "agency: winners"
-	parts := strings.SplitN(data, ": ", 2)
-	if len(parts) != 2 {
-		log.Warningf("action: parse_winners | result: fail | client_id: %v | message: %v", c.config.ID, data)
-		return nil
-	}
-
-	agency := parts[0]
-	winners := strings.Split(parts[1], ",")
-	log.Infof("action: receive_winners | result: success | agency: %v | winners: %v", agency, winners)
-
-	return winners
+	// time.Sleep(c.config.LoopPeriod)
+	// log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

@@ -5,7 +5,7 @@ from common.utils import Bet
 
 
 def recv_all(sock, size):
-    """ Intenta recibir exactamente 'size' bytes del socket. """
+    """ Intenta recibir exactamente 'size' bytes del socket, manejando short reads. """
     data = bytearray()
     while len(data) < size:
         chunk = sock.recv(size - len(data))
@@ -13,6 +13,16 @@ def recv_all(sock, size):
             return None
         data.extend(chunk)
     return data
+
+def send_all(sock, data):
+    """Envía todos los datos al socket, manejando short writes."""
+    total_sent = 0
+    while total_sent < len(data):
+        sent = sock.send(data[total_sent:])
+        if sent == 0:
+            raise RuntimeError("Conexión cerrada inesperadamente")
+        total_sent += sent
+
 
 def receive_bet(client_sock):
     """
@@ -75,3 +85,25 @@ def receive_integer(client_sock) -> int:
     except (OSError, struct.error) as e:
         logging.error(f"Error al recibir el entero: {e}")
         return None
+    
+def send_winners(client_sock, winners):
+    """
+    Envía la lista de DNIs de los ganadores a través del socket.
+
+    Args:
+        client_sock: socket del cliente
+        winners: lista de DNIs de los ganadores (como strings)
+    """
+    # Convertir la cantidad de ganadores a 4 bytes (big-endian)
+    num_winners = len(winners)
+    data = struct.pack("!I", num_winners)
+
+    # Convertir cada ganador a bytes y agregar su tamaño
+    winners_bytes = [w.encode('utf-8') for w in winners]
+    for w in winners_bytes:
+        data += struct.pack("!I", len(w))  # Tamaño del DNI en 4 bytes
+    for w in winners_bytes:
+        data += w  # Agregar el DNI en bytes
+
+    # Enviar toda la información usando send_all
+    send_all(client_sock, data)
