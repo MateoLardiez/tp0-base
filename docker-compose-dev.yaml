@@ -7,7 +7,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - LOGGING_LEVEL=DEBUG
-      - CLIENTS_AMOUNT=2
+      - CLIENTS_AMOUNT=3
     networks:
       - testing_net
     volumes:
@@ -38,6 +38,20 @@ services:
     volumes:
       - ./client/config.yaml:/config.yaml
       - ./.data/agency-2.csv:/agency-2.csv
+    depends_on:
+      - server
+    
+  client3:
+    container_name: client3
+    image: client:latest
+    entrypoint: /client
+    environment:
+      - CLI_ID=3
+    networks:
+      - testing_net
+    volumes:
+      - ./client/config.yaml:/config.yaml
+      - ./.data/agency-3.csv:/agency-3.csv
     depends_on:
       - server
     

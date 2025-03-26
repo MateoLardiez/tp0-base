@@ -22,7 +22,7 @@ class Server:
         signal.signal(signal.SIGTERM, self.shutdown)
         self.clients_connected = {}
         self.clients_amount = clients_amount
-        self.notified_agencies = list()
+        self.notified_agencies = 0
         self.winners = dict()
         self.lottery_run = False
 
@@ -155,11 +155,11 @@ class Server:
                         
             msg = client_sock.recv(1024).decode('utf-8').strip()
             if msg == "END":
-                self.notified_agencies.append(client_sock)
+                self.notified_agencies += 1
             
-            if (not self.lottery_run) and (len(self.notified_agencies) == self.clients_amount):
+            if (not self.lottery_run) and (self.notified_agencies == self.clients_amount):
                 time.sleep(1) # Para logs
-
+                logging.info(f"EMPEZANDO A SORTEAR con {self.notified_agencies} agencias y {self.clients_amount} clientes conectados")
                 self.sort_winners()
                 actual_client_sock = client_sock
                 for agency, winners_of_agency in self.winners.items():
