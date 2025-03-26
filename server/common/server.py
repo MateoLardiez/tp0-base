@@ -12,6 +12,7 @@ from common.utils import has_won
 from common.msg_bet import send_winners
 
 
+
 class Server:
     def __init__(self, port, listen_backlog, clients_amount):
         # Initialize server socket
@@ -23,7 +24,7 @@ class Server:
         self.clients_connected = {}
         self.clients_amount = clients_amount
         self.notified_agencies = 0
-        self.winners = dict()
+        self.winners = {agency_id: [] for agency_id in range(1, self.clients_amount + 1)}
         self.lottery_run = False
 
     def shutdown(self, signum, frame):
@@ -111,8 +112,8 @@ class Server:
         bets = load_bets()
         for bet in bets:
             if has_won(bet):
-                if bet.agency not in self.winners:
-                    self.winners[bet.agency] = []
+                #if bet.agency not in self.winners:
+                #    self.winners[bet.agency] = []
                 self.winners[bet.agency].append(bet.document)
         self.lottery_run = True
         logging.info(f'action: sort_winners | result: success')
@@ -125,26 +126,8 @@ class Server:
         If a problem arises in the communication with the client, the
         client socket will also be closed
         """
-
-        # Recibir el START o el END.
-        # Si es END, chequea si ya se recibieron todas las apuestas
-        '''
-        if self.lottery_run:
-            send_winners(client_sock, self.winners)
-            return
-            # Quizas es mejor enviar los winners solo cuando el cliente te lo pide. Evitar el for agency, winners ...
-        '''
-        # Si es start entra al try
-
         total_bets = 0
         try:
-            #initial_msg = receive_integer(client_sock)
-            #if initial_msg is None:
-            #    client_sock.sendall("ERROR\n".encode('utf-8'))
-            #    logging.error(f'action: receive_message | result: fail')
-            #    return
-            #if initial_msg == 1:
-                #Enviar msg a agencia
             total_bets = self.receive_bets(client_sock, total_bets)
             if total_bets == -1:
                 self.shutdown()
@@ -161,7 +144,6 @@ class Server:
 
             if (not self.lottery_run) and (self.notified_agencies == self.clients_amount):
                 time.sleep(1) # Para logs
-                logging.info(f"EMPEZANDO A SORTEAR con {self.notified_agencies} agencias y {self.clients_amount} clientes conectados")
                 self.sort_winners()
                 actual_client_sock = client_sock
                 for agency, winners_of_agency in self.winners.items():
@@ -176,7 +158,6 @@ class Server:
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
             logging.error("action: receive_message | result: fail | error: {e}")
         
-        # Para los tests
         #finally:
         #    client_sock.close()
 

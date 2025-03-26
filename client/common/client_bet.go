@@ -147,6 +147,9 @@ func ReceiveWinners(conn net.Conn) ([]string, error) {
 	}
 
 	winners := make([]string, numWinners)
+	if numWinners == 0 {
+		return winners, nil
+	}
 
 	// Leer el tamaño de cada DNI (4 bytes cada uno)
 	dniSizes := make([]uint32, numWinners)

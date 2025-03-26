@@ -96,14 +96,16 @@ def send_winners(client_sock, winners):
     """
     # Convertir la cantidad de ganadores a 4 bytes (big-endian)
     num_winners = len(winners)
+    logging.info(f'GANADORES cantidad: {num_winners}')
     data = struct.pack("!I", num_winners)
 
-    # Convertir cada ganador a bytes y agregar su tamaño
-    winners_bytes = [w.encode('utf-8') for w in winners]
-    for w in winners_bytes:
-        data += struct.pack("!I", len(w))  # Tamaño del DNI en 4 bytes
-    for w in winners_bytes:
-        data += w  # Agregar el DNI en bytes
+    if num_winners > 0:
+        # Convertir cada ganador a bytes y agregar su tamaño
+        winners_bytes = [w.encode('utf-8') for w in winners]
+        for w in winners_bytes:
+            data += struct.pack("!I", len(w))  # Tamaño del DNI en 4 bytes
+        for w in winners_bytes:
+            data += w  # Agregar el DNI en bytes
 
     # Enviar toda la información usando send_all
     send_all(client_sock, data)
