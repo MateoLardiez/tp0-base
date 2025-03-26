@@ -266,6 +266,6 @@ func (c *Client) StartClientLoop() {
 	}
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", len(winners))
 
-	// time.Sleep(c.config.LoopPeriod)
-	// log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
+	time.Sleep(c.config.LoopPeriod)
+	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }
