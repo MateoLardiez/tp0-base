@@ -157,6 +157,8 @@ class Server:
             if msg == "END":
                 self.notified_agencies += 1
             
+            time.sleep(1) # Para logs
+
             if (not self.lottery_run) and (self.notified_agencies == self.clients_amount):
                 time.sleep(1) # Para logs
                 logging.info(f"EMPEZANDO A SORTEAR con {self.notified_agencies} agencias y {self.clients_amount} clientes conectados")
