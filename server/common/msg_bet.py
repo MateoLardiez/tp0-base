@@ -107,3 +107,4 @@ def send_winners(client_sock, winners):
 
     # Enviar toda la información usando send_all
     send_all(client_sock, data)
+    logging.info(f'action: ganadores_enviados | result: success | cantidad: {num_winners}')
