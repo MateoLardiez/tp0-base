@@ -15,6 +15,9 @@ import (
 	"github.com/op/go-logging"
 )
 
+const END_MSG = byte(0x01) // Definir un byte global
+const OK_MSG = byte(0x02)
+
 var log = logging.MustGetLogger("log")
 
 // ClientConfig Configuration used by the client
@@ -197,17 +200,17 @@ func (c *Client) SendBetsInBatch() {
 
 	}
 	// Recibir confirmación del servidor (OK)
-	response, err := bufio.NewReader(c.conn).ReadString('\n')
+	buf := make([]byte, 1)
+	_, err = c.conn.Read(buf)
 	if err != nil {
 		log.Errorf("action: receive_confirmation | result: fail | client_id: %v | error: %v", c.config.ID, err)
 	}
-	response = strings.TrimSpace(response)
 
-	// Loguear respuesta
-	if response == "OK" {
+	// Verificar si el mensaje recibido es el esperado
+	if buf[0] == OK_MSG {
 		log.Infof("action: apuesta_enviada | result: success | cantidad: %v | client_id: %v", len(bets), c.config.ID)
 	} else {
-		log.Warningf("action: apuesta_enviada | result: fail | client_id: %v | response: %v", c.config.ID, response)
+		log.Warningf("action: apuesta_enviada | result: fail | client_id: %v | response: %v", c.config.ID, buf[0])
 	}
 }
 
@@ -238,7 +241,7 @@ func (c *Client) StartClientLoop() {
 
 	// Notificar al servidor que termine de enviar todas las cosas. En mi caso es evitable porque
 	// el servidor sabe cuando es que se terminan de enviar los datos. Pero lo pide el enunciado
-	_, err = c.conn.Write([]byte("END\n"))
+	_, err = c.conn.Write([]byte{END_MSG})
 	if err != nil {
 		log.Errorf("action: notify_end | result: fail | client_id: %v | error: %v", c.config.ID, err)
 		return

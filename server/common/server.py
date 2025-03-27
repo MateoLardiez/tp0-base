@@ -11,6 +11,8 @@ from multiprocessing import Process, Barrier, Manager, Lock, Value
 
 ERROR = -1
 SUCCESS = 0
+END_MSG = b'\x01'  # Definir un byte global
+OK_MSG = b'\x02'
 
 
 class Server:
@@ -166,10 +168,10 @@ class Server:
                 return
 
             logging.info(f'action: apuesta_recibida | result: success | cantidad: {total_bets}')
-            client_sock.sendall("OK\n".encode('utf-8'))
+            client_sock.sendall(OK_MSG)
                         
-            msg = client_sock.recv(1024).decode('utf-8').strip()
-            if msg == "END":
+            msg = client_sock.recv(1)
+            if msg == END_MSG:
                 with self.variables_lock:
                     self.notified_agencies.value += 1
 
