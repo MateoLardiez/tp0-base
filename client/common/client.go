@@ -76,7 +76,7 @@ func (c *Client) GetBetData() (Bet, error) {
 
 // handleShutdown maneja SIGTERM y cierra la conexión correctamente
 func (c *Client) handleShutdown() {
-	<-c.stop // Bloquea hasta que reciba SIGTERM o SIGINT
+	<-c.stop // Bloquea hasta que reciba SIGTERM
 	log.Warningf("action: shutdown | result: in_progress | client_id: %v", c.config.ID)
 	if c.conn != nil {
 		c.conn.Close()
@@ -101,6 +101,7 @@ func (c *Client) createClientSocket() error {
 	return nil
 }
 
+// Envia una apuesta al servidor
 func (c *Client) SendBetToServer() {
 	bet, err := c.GetBetData()
 
@@ -163,6 +164,7 @@ func (c *Client) SendBetToServer() {
 
 }
 
+// Envia todas las apuestas en batches al servidor
 func (c *Client) SendBetsInBatch() {
 	// Leer apuestas del CSV
 	bets, err := ReadBetsFromCSV(fmt.Sprintf("./agency-%s.csv", c.config.ID), c.config.ID)
@@ -199,7 +201,7 @@ func (c *Client) SendBetsInBatch() {
 		}
 
 	}
-	// Recibir confirmación del servidor
+	// Recibir confirmación del servidor (OK)
 	response, err := bufio.NewReader(c.conn).ReadString('\n')
 	if err != nil {
 		log.Errorf("action: receive_confirmation | result: fail | client_id: %v | error: %v", c.config.ID, err)
@@ -223,10 +225,8 @@ func SendAgencyID(conn net.Conn, agencyID uint32) error {
 	return err
 }
 
-// StartClientLoop Send messages to the client until some time threshold is met
+// Se encuentra todo el flujo del cliente
 func (c *Client) StartClientLoop() {
-	// There is an autoincremental msgID to identify every message sent
-	// Messages if the message amount threshold has not been surpassed
 
 	// Crear socket
 	if err := c.createClientSocket(); err != nil {
@@ -250,7 +250,8 @@ func (c *Client) StartClientLoop() {
 
 	c.SendBetsInBatch()
 
-	// Notificar al servidor que terminó
+	// Notificar al servidor que termine de enviar todas las cosas. En mi caso es evitable porque
+	// el servidor sabe cuando es que se terminan de enviar los datos. Pero lo pide el enunciado
 	_, err = c.conn.Write([]byte("END\n"))
 	if err != nil {
 		log.Errorf("action: notify_end | result: fail | client_id: %v | error: %v", c.config.ID, err)
@@ -266,6 +267,6 @@ func (c *Client) StartClientLoop() {
 	}
 	log.Infof("action: consulta_ganadores | result: success | cant_ganadores: %d", len(winners))
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(1 * time.Second) // Para que pasen los tests
 	log.Infof("action: loop_finished | result: success | client_id: %v", c.config.ID)
 }

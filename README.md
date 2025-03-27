@@ -219,8 +219,6 @@ Se puede observar que pasa todas las pruebas:
 
 ## Resolucion ejercicio 3
 
-## Resolucion ejercicio 3
-
 Se busca verificar que al enviar un mensaje al servidor, el mensaje que devuelva sea el mismo y asi comprobar el echo. Para esto se crea un nuevo archivo validar-echo-server.sh. En este se crea un contenedor temporal busybox para enviar el mensaje al servidor y luego eliminarlo. Si el mensaje que devuelve el servidor es el mismo que el que se envio, el result es success. Caso contrario el result es fail
 
 El nuevoscript de bash se ejecuta de la forma ./validar-echo-server.sh , sin pasarle ningun parametro
@@ -310,3 +308,6 @@ Para acceder a cada una de estas variables compartidas, el proceso debe obtener 
 Luego se utiliza una barrera winners_barrier para sincronizar todos los procesos en un mismo punto el cual es esperar a que todos hayan mandado las bets, para que el servidor pueda hacer las apuestas.
 
 Hay un cambio en el envio de las apuestas a cada cliente. Un proceso solo es el que va a ejecutar el sorteo de apuestas, obteniendo el variables_lock. Pero luego cada proceso va a ser el responsable de enviarle los winners al cliente/agencia que le corresponda (la que este "conectada"). Para esto nuevamente debe obtener el variables_lock antes.
+
+Las pruebas de la catedra pasan correctamente:
+![alt text](ImgPruebas/pruebasEj8.png)

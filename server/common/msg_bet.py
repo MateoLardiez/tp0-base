@@ -26,13 +26,8 @@ def send_all(sock, data):
 
 def receive_bet(client_sock):
     """
-    Recibe y parsea una apuesta desde un socket de cliente.
-
-    Args:
-        client_sock: socket del cliente.
-
-    Returns:
-        Una instancia de Bet si la recepción es exitosa, None en caso de error.
+    Recibe y parsea una apuesta desde un socket de cliente. Retorna una
+    instancia de Bet si la recepción es exitosa, None en caso de error.
     """
     try:
         # Recibir los primeros 6 enteros (cada uno de 4 bytes)
@@ -69,12 +64,6 @@ def receive_bet(client_sock):
 def receive_integer(client_sock) -> int:
     """
     Recibe un entero de 4 bytes desde un socket de cliente.
-
-    Args:
-        client_sock: socket del cliente.
-
-    Returns:
-        El entero recibido si la recepción es exitosa, None en caso de error.
     """
     try:
         data = recv_all(client_sock, 4)
@@ -88,11 +77,7 @@ def receive_integer(client_sock) -> int:
     
 def send_winners(client_sock, winners):
     """
-    Envía la lista de DNIs de los ganadores a través del socket.
-
-    Args:
-        client_sock: socket del cliente
-        winners: lista de DNIs de los ganadores (como strings)
+    Envía la lista de DNIs de los ganadores, recibida como parametro, a través del socket.
     """
     # Convertir la cantidad de ganadores a 4 bytes (big-endian)
     num_winners = len(winners)
@@ -106,6 +91,5 @@ def send_winners(client_sock, winners):
         for w in winners_bytes:
             data += w  # Agregar el DNI en bytes
 
-    # Enviar toda la información usando send_all
     send_all(client_sock, data)
     logging.info(f'action: ganadores_enviados | result: success | cantidad: {num_winners}')
