@@ -173,3 +173,20 @@ func ReceiveWinners(conn net.Conn) ([]string, error) {
 
 	return winners, nil
 }
+
+// Envia la cantidad de batches al servidor en formato int32 (big-endian)
+func BatchCountBytes(lenBatches int) []byte {
+	batchCount := int32(lenBatches)
+	batchCountBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(batchCountBytes, uint32(batchCount))
+	return batchCountBytes
+}
+
+func SendAgencyID(conn net.Conn, agencyID uint32) error {
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, agencyID); err != nil {
+		return err
+	}
+	_, err := conn.Write(buf.Bytes())
+	return err
+}

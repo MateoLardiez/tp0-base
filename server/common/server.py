@@ -5,10 +5,12 @@ import sys
 import time
 sys.path.append('.')
 from common.utils import store_bets, load_bets, has_won
-from common.msg_bet import receive_bet, receive_integer, send_winners
+from common.server_protocol import receive_bet, receive_integer, send_winners
 
 from multiprocessing import Process, Barrier, Manager, Lock, Value
 
+ERROR = -1
+SUCCESS = 0
 
 
 class Server:
@@ -54,13 +56,13 @@ class Server:
             client_sock.sendall("ERROR\n".encode('utf-8'))
             logging.error(f'action: receive_client | result: fail | ip: {client_sock.getpeername()[0]}')
             client_sock.close()
-            return -1
+            return ERROR
 
         self.clients_connected[agency_number] = client_sock
         self.winners[agency_number] = []
 
         logging.info(f'action: receive_client | result: success | agency_number: {agency_number}')
-        return 0
+        return SUCCESS
 
     def run(self):
         """
@@ -75,8 +77,8 @@ class Server:
         while self.running:
             try:
                 client_sock = self.__accept_new_connection()
-                succes = self.add_client(client_sock)
-                if succes == -1:
+                could_add_client = self.add_client(client_sock)
+                if could_add_client == ERROR:
                     logging.error(f'action: receive_client | result: fail | ip: {client_sock.getpeername()[0]}')
                     client_sock.close()
                     return
@@ -103,7 +105,7 @@ class Server:
         if amount_batchs is None:
             client_sock.sendall("ERROR\n".encode('utf-8'))
             logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
-            return -1
+            return ERROR
         
 
         for _ in range(amount_batchs):
@@ -111,7 +113,7 @@ class Server:
             if batch_size is None:
                 client_sock.sendall("ERROR\n".encode('utf-8'))
                 logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')
-                return -1
+                return ERROR
 
             bets = []
             for _ in range(batch_size):
@@ -119,7 +121,7 @@ class Server:
                 if bet is None:
                     client_sock.sendall("ERROR\n".encode('utf-8'))
                     logging.error(f'action: apuesta_recibida | result: fail | cantidad: {total_bets}')                        
-                    return -1
+                    return ERROR
                 total_bets+=1
                 bets.append(bet)
 
@@ -143,7 +145,7 @@ class Server:
         logging.info(f'action: sort_winners | result: success')
 
     def handle_bets(self, client_sock):
-        """Maneja el envio de los ganadores a la agencia"""
+        """Si todavia no se ejecuto el sorteo, lo ejecuta el primer proceso que agarre el lock"""
         logging.info(f'action: handle_bets | result: in_progress')
         with self.variables_lock:
             if (not self.lottery_run.value) and (self.notified_agencies.value == self.clients_amount):
@@ -160,7 +162,7 @@ class Server:
         total_bets = 0
         try:
             total_bets = self.receive_bets(client_sock, total_bets)
-            if total_bets == -1:
+            if total_bets == ERROR:
                 self.shutdown()
                 return
 

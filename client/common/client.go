@@ -2,8 +2,6 @@ package common
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
@@ -176,10 +174,7 @@ func (c *Client) SendBetsInBatch() {
 	// Dividir en batches según la configuración
 	batches := SplitBetsIntoBatches(bets, c.config.BatchAmount)
 
-	// Enviar la cantidad de batches al servidor en formato int32 (big-endian)
-	batchCount := int32(len(batches))
-	batchCountBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(batchCountBytes, uint32(batchCount))
+	batchCountBytes := BatchCountBytes(len(batches))
 
 	if err := SendAll(c.conn, batchCountBytes); err != nil {
 		log.Errorf("action: send_batch_count | result: fail | client_id: %v | error: %v", c.config.ID, err)
@@ -214,15 +209,6 @@ func (c *Client) SendBetsInBatch() {
 	} else {
 		log.Warningf("action: apuesta_enviada | result: fail | client_id: %v | response: %v", c.config.ID, response)
 	}
-}
-
-func SendAgencyID(conn net.Conn, agencyID uint32) error {
-	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.BigEndian, agencyID); err != nil {
-		return err
-	}
-	_, err := conn.Write(buf.Bytes())
-	return err
 }
 
 // Se encuentra todo el flujo del cliente
