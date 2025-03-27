@@ -321,9 +321,3 @@ Las pruebas de la catedra pasan correctamente:
 Todas las pruebas de todos los ejercicios pasan correctamente:
 ![alt text](ImgPruebas/pruebasEjercicios.png)
 
-
-
-Flujo de logs, Ejercicio 8:
-
-![alt text](flujo1.png)
-![alt text](flujo2.png)
