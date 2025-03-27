@@ -178,3 +178,147 @@ Se espera que se redacte una sección del README en donde se indique cómo ejecu
 Se proveen [pruebas automáticas](https://github.com/7574-sistemas-distribuidos/tp0-tests) de caja negra. Se exige que la resolución de los ejercicios pase tales pruebas, o en su defecto que las discrepancias sean justificadas y discutidas con los docentes antes del día de la entrega. El incumplimiento de las pruebas es condición de desaprobación, pero su cumplimiento no es suficiente para la aprobación. Respetar las entradas de log planteadas en los ejercicios, pues son las que se chequean en cada uno de los tests.
 
 La corrección personal tendrá en cuenta la calidad del código entregado y casos de error posibles, se manifiesten o no durante la ejecución del trabajo práctico. Se pide a los alumnos leer atentamente y **tener en cuenta** los criterios de corrección informados  [en el campus](https://campusgrado.fi.uba.ar/mod/page/view.php?id=73393).
+
+
+
+# Resolucion
+
+## Resolucion ejercicio 1
+
+Debo generar un script de bash que genere un docker-compose.yaml que:
+1) defina un servidor
+2) genere N clientes, siendo N el valor pasado por parametro, con los nombres client1, client2, etc
+3) Mantenga la configuracion de red, para que los clientes puedan comunicarse con el servidor
+
+Primero creamos el archivo generar-compose.sh. Le damos todos los permisos (chmod 777 {nombre_script}, o chmod +x {nombre_script})
+Definimos la escritura del servidor en el yaml (docker-compose-dev.yaml).
+Luego utilizamos la funcion generar_clientes.py para que agregue al yaml la parte de los clientes
+Finalmente agregamos la parte de red.
+
+Nos queda un docker-compose.yaml ejecutable.
+
+Para el manejo de errores se analiza que los parametros recibidos sean 2 y que el segundo parametro sea si o si un numero entero positivo.
+
+Su forma de ejecucion es con el comando: `./generar-compose.sh docker-compose-dev.yaml {CANT_CLIENTES}`. Desde la raiz
+
+Se puede observar que pasa todas las pruebas:
+![alt text](ImgPruebas/pruebasEj1.png)
+
+## Resolucion ejercicio 2
+
+Se busca separar la configuracion del codigo para que no se tengan que reconstruir las imagenes de Docker cada vez que hay una modificacion en config.ini y config.yaml. Para esto se agrega en cada en el docker-compose-dev.yaml en el servidor el volumen que diriga al config.ini:
+
+- volumes:
+    - ./server/config.ini:/config.ini
+
+Y lo mismo para el cliente, se agrega su volumen a cada cliente:
+- volumes:
+    - ./client/config.yaml:/config.yaml
+
+Tambien para que pasen todas las pruebas se debe eliminar la configuaricon de entorno de logs: CLI_LOG_LEVEL=DEBUG para el cliente y el servidor, ya que en los tests se utiliza tanto INFO con DEBUG.
+
+Se puede observar que pasa todas las pruebas:
+![alt text](ImgPruebas/pruebasEj2.png)
+
+## Resolucion ejercicio 3
+
+Se busca verificar que al enviar un mensaje al servidor, el mensaje que devuelva sea el mismo y asi comprobar el echo. Para esto se crea un nuevo archivo validar-echo-server.sh. En este se crea un contenedor temporal busybox para enviar el mensaje al servidor y luego eliminarlo. Si el mensaje que devuelve el servidor es el mismo que el que se envio, el result es success. Caso contrario el result es fail
+
+El nuevoscript de bash se ejecuta de la forma `./validar-echo-server.sh` , sin pasarle ningun parametro
+
+Los tests pasan exitosamente: 
+![alt text](ImgPruebas/pruebasEj3.png)
+
+## Resolucion ejercicio 4
+
+Se debe modificar servidor y cliente para que terminen de forma gracefull cuando reciban la señal SIGTERM. Para esto se modifican ambos archivos client.go y server.py.
+Vamos por el cliente primero:
+Se agrega como variable del Cliente un canal para detectar las señales. Tambien se crea un hilo de ejecucion (goroutine) para que este siempre atento a escuchar y manejar la señal. Esto se hace en la funcion creada handleShutDown(). Esta funcion se bloquea hasta que se reciba la señal y luego mata gracefully al cliente. 
+
+Del lado del cliente se hace algo similar:
+Se agrega una variable que pueda detectar la señal y un booleano para parar de escuchar por el puerto conectado, cuando se desconecte. Se almacenan los clientes conectados en una lista. Cuando se recibe la señal, se los desconecta uno por uno y luego se mata el servidor gracefully.
+
+Todas las pruebas de la catedra pasan exitosamente:
+![alt text](ImgPruebas/pruebasEj4.png)
+
+
+## Resolucion ejercicio 5
+
+Se busca armar un protocolo de comunicacion para que los clientes le puedan enviar una apuesta al servidor.
+Protocolo de comunicacion:
+
+type Bet struct {
+	Agency    string
+	FirstName string
+	LastName  string
+	Document  string
+	Birthdate string
+	Number    string
+}
+
+
+El cliente le envia al servidor 6 enteros, los cuales definen el largo de cada atributo del cliente en orden (AGENCY, NOMBRE, APELLIDO, DOCUMENTO, NACIMIENTO, NUMERO). El servidor procede a recibir la cantidad de bytes como sea la suma de estos 6 valores enteros y luego hace el parseo para cada atributo, sabiendo su tamanio. Los protocolos de comunicacion se manejan en archivos separados al server y client. client_protocol.go para el cliente y server_protocol.py para el servidor. De esta manera ni el cliente ni el servidor conocen el protocolo de comunicacion
+
+Del lado del cliente, la funcion SerializeBet() que se encuentra en el archivo client_protocol.go, se encarca de generar la cadena de bytes correspondientes acorde al protocolo indicado, que se va a enviar al servidor a travez del socket.
+Del lado del servidor, la funcion receive_bet() que se encuentra en el archivo server_protocol.py, se encarga de leer todos esos bytes en el orden correspondiente y formar nuevamente la Bet del lado del servidor, para almacenarla.
+Para el manejo de los errores short read y short write, el cliente utiliza la funcion sendAll(), la cual se queda en un bucle hasta que haya enviado todos los bytes correspondientes. Del lado del servidor se encuentra la funcion recv_all() la cual se queda en un bucle hasta recibir la cantidad ede bytes correspondientes.
+
+Todas las pruebas de la catedra pasan exitosamente:
+![alt text](ImgPruebas/pruebasEj5.png)
+
+## Resolucion ejercicio 6
+
+Ahora el cliente debe poder enviar muchas apuestas a la vez. Las apuestas las lee de un csv. Hay uno por cada agencia. Tambien se debe respetar un limite de apuestas enviadas enunciado en el yaml. 
+Para esto se adapta al cliente para que pueda leer todas las apuestas de su csv correspondiente. Se modifica el docker-compose agregando a cada cliente el archivo correspondiente a las bets que debe enviar al servidor. Luego se genera una funcion para leer el csv. Esto lo hace la funcion ReadBetsFromCSV() la cual a partir de un filename, lee y arma todas las Bets de ese csv.
+
+Se modifica levemente el protocolo para que se puedan enviar todas las bets correctamente. Primero se envia un entero que define la cantidad de batches que se van a enviar. Luego se comienza a enviar batch por batch. Cada batch envia al principio la cantidad de bets que va a enviar y luego empieza a enviar los bets con el protocolo ya definido.
+El servidor cuando recibe la cantidad de batches que le van a llegar, itera esa cantidad de batches. En cada iteracion lee la cantidad de bets que le van a llegar e itera esa cantidad de veces. Termina cuando recorrio los for anidados.
+Tambien, del lado del cliente, se analiza que los batches no superen los 8kb.
+
+Las pruebas de la catedra pasan correctamente:
+![alt text](ImgPruebas/pruebasEj6.png)
+
+
+## Resolucion ejercicio 7
+
+Se debe notificar a las agencias los correspondientes ganadores. Una vez que se almacenan todas las apuestas de todos los ganadores, el servidor recibe el mensaje de que se hicieron todas las apuestas y puede realizar el sorteo, para luego devolver el ganador a su correspondiente apuesta.
+
+Modificaciones del lado del cliente:
+Se agrega un primer mensaje del cliente al servidor cuando se logra conectar, el cual es un entero de 4 bytes que significa el ID de la agencia de ese cliente. Esto es para que el servidor asocie el client_socket con el agency_id determinado.
+Luego de enviar todas las bets, se envia un mensaje de END y se espera a recibir los ganadores, que los enviara el servidor cuando todas las agencias envien END
+
+Modificaciones del lado del servidor:
+Se modifica la forma en que se guardan los clientes que se conectaron. El primer mensaje que recibe el servidor es el agency_id, entonces guarda los valores en un diccionario de clientes conectados, siendo la clave la agency_id y el valor el client_sock. Tambien en el diccionario winners se guarda como clave el agency_id y como valor una lista vacia que se va a rellenar de los ganadores de esa agencia.
+Cuando se reciban todas las bets y el mensaje end, el contador de notificaciones de agencias se sumara a 1. Cuando este llegue a clients_amount (variable de entorno que se agrega al docker-compose-yaml) se hace load_bets() y has_won() por cada bet. Las bets que ganaron se almacenan en un diccionario winners el cual contiene como clave el id de la agencia y como valor una lista de los ganadores de esa agencia.
+Cuando se obtienen todos los ganadores, se procede a enviar los correspondientes a cada agencia. Para esto se utiliza el mismo protocolo de comunicacion, pero de forma inversa:
+Se envia primero un entero de 4 bytes que define la cantidad de winners que tiene esa agencia. Luego se envia por cada ganador, la cantidad de numeros que tiene el dni de ese ganador. Luego se envian todos los dnis de todos los ganadores de esa agencia. El cliente, al conocer el protocolo, puede rearmar la lista de ganadores correctamente.
+
+Al enviarse todos los ganadores a todas las agencias, el servidor procede a cerrar la conexion con el cliente.
+
+Las pruebas de la catedra pasan correctamente:
+![alt text](ImgPruebas/pruebasEj7.png)
+
+## Resolucion ejercicio 8
+
+El ejercicio pide modificar el servidor para ejecutar los clientes en pararelo. Como usar threads en python trae complicaciones, combiene utilizar procesos. Para esto se utiliza la libreria multiprocessing, utilizando Process, Manager, Lock, Barrier y Value.
+
+Por cada cliente se lanza un Process que maneja toda la recepcion de bets por parte de ese cliente particular, y el futuro envio de gandores a esa agencia particular.
+Hay distintos recursos compartidos que deben manejarse correctamente, los cuales son:
+- El entero notified_agencies. Se maneja con Values para que persista el cambio de su valor en los distintos procesos
+- El diccionario de winners. Se maneja con Manager.dict()
+- El archivo donde se guardan las bets. Se maneja con un lock solo para este, el cual es bet_file_lock
+- El booleano lotery_run que define cuando se sortearon las bets. Se maneja con Values para que persista en los distintos procesos.
+Para acceder a cada una de estas variables compartidas, el proceso debe obtener el variables_lock.
+
+Luego se utiliza una barrera winners_barrier para sincronizar todos los procesos en un mismo punto el cual es esperar a que todos hayan mandado las bets, para que el servidor pueda hacer las apuestas.
+
+Hay un cambio en el envio de las apuestas a cada cliente. Un proceso solo es el que va a ejecutar el sorteo de apuestas, obteniendo el variables_lock. Pero luego cada proceso va a ser el responsable de enviarle los winners al cliente/agencia que le corresponda (la que este "conectada"). Para esto nuevamente debe obtener el variables_lock antes.
+
+Las pruebas de la catedra pasan correctamente:
+![alt text](ImgPruebas/pruebasEj8.png)
+
+
+
+Todas las pruebas de todos los ejercicios pasan correctamente:
+![alt text](ImgPruebas/pruebasEjercicios.png)
+
