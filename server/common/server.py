@@ -146,7 +146,6 @@ class Server:
 
     def handle_bets(self, client_sock):
         """Si todavia no se ejecuto el sorteo, lo ejecuta el primer proceso que agarre el lock"""
-        logging.info(f'action: handle_bets | result: in_progress')
         with self.variables_lock:
             if (not self.lottery_run.value) and (self.notified_agencies.value == self.clients_amount):
                 self.sort_winners()
